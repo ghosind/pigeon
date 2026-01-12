@@ -1,0 +1,109 @@
+# =====================
+# Node / Package
+# =====================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# =====================
+# Build Outputs
+# =====================
+dist/
+dist-electron/
+out/
+release/
+build/
+app-builds/
+
+# electron-builder / forge
+*.dmg
+*.exe
+*.AppImage
+*.deb
+*.rpm
+*.snap
+*.zip
+
+# =====================
+# Vite / Web
+# =====================
+.vite/
+.vite-cache/
+.cache/
+
+# =====================
+# TypeScript
+# =====================
+*.tsbuildinfo
+
+# =====================
+# Electron
+# =====================
+# Local app data (dev)
+.devtools/
+.electron/
+.userdata/
+
+# =====================
+# OS
+# =====================
+.DS_Store
+.DS_Store?
+Thumbs.db
+ehthumbs.db
+Icon?
+Desktop.ini
+
+# =====================
+# IDE
+# =====================
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+!.vscode/launch.json
+
+# =====================
+# Environment
+# =====================
+.env
+.env.*
+!.env.example
+
+# =====================
+# Logs
+# =====================
+logs/
+*.log
+
+# =====================
+# Coverage / Test
+# =====================
+coverage/
+.nyc_output/
+playwright-report/
+test-results/
+
+# =====================
+# Temporary
+# =====================
+tmp/
+temp/
+*.swp
+*.swo
+
+# =====================
+# SQLite / Local DB
+# =====================
+*.db
+*.sqlite
+*.sqlite3
+
+# =====================
+# Cache (tooling)
+# =====================
+.eslintcache
+.stylelintcache
