@@ -9,7 +9,7 @@ type BodyEditorProps = {
   onChange: (s: string) => void
 }
 
-export default function BodyEditor({ body, onChange }: BodyEditorProps) {
+export default function BodyEditor({ body, onChange }: BodyEditorProps): React.ReactElement {
   const [mode, setMode] = React.useState<string>('raw')
   const [language, setLanguage] = React.useState<string>('JSON')
 

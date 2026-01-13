@@ -12,9 +12,9 @@ export type KeyValue = { id: string; key?: string; value?: string; enabled?: boo
 
 export default function RequestPage(): React.JSX.Element {
   const [request, setRequest] = useState<HttpRequest>({
-    method: HttpMethod.GET,
-  });
-  const [response, setResponse] = useState<HTTPResponse | null>()
+    method: HttpMethod.GET
+  })
+  const [response, setResponse] = useState<HTTPResponse | null>(null)
   const [isLoading, setIsLoading] = useState<boolean>(false)
   const [currentReqId, setCurrentReqId] = useState<string | null>(null)
 
@@ -33,16 +33,16 @@ export default function RequestPage(): React.JSX.Element {
     setCenterPct((prev) => Math.min(90, Math.max(10, prev + deltaPct)))
   }, [])
 
-  const doSend = async () => {
+  const doSend = async (): Promise<void> => {
     try {
       setIsLoading(true)
       let url = request?.url || ''
       if (!/^http(s)?:\/\//.test(url)) {
         url = `http://${url}`
       }
-      let urlObj = new URL(url)
+      const urlObj = new URL(url)
 
-      const headers = {}
+      const headers: Record<string, string> = {}
       request?.headers?.forEach((row) => {
         if (row.key && row.enabled) {
           headers[row.key] = row.value || ''
@@ -59,14 +59,12 @@ export default function RequestPage(): React.JSX.Element {
       }
 
       setCurrentReqId(req.id)
-      const response = await window.api.sendRequest(req) as Response
+      const response = (await window.api.sendRequest(req)) as Response
 
       const resHeaders: Record<string, string> = {}
       Object.entries(response.headers).forEach(([key, value]) => {
         resHeaders[key] = Array.isArray(value) ? value.join('; ') : value
       })
-
-      debugger
 
       setResponse({
         status: response.status,
@@ -88,7 +86,7 @@ export default function RequestPage(): React.JSX.Element {
     }
   }
 
-  const handleCancel = () => {
+  const handleCancel = (): void => {
     if (currentReqId) {
       window.api.abortRequest(currentReqId)
     }
@@ -97,14 +95,16 @@ export default function RequestPage(): React.JSX.Element {
   }
 
   return (
-    <Box sx={{
-      height: '100%',
-      display: 'flex',
-      flexDirection: 'row',
-      p: 1,
-      gap: 1,
-      bgcolor: 'background.default'
-    }}>
+    <Box
+      sx={{
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'row',
+        p: 1,
+        gap: 1,
+        bgcolor: 'background.default'
+      }}
+    >
       <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
         <Paper elevation={1} sx={{ p: 1, mb: 1, flex: 'none' }}>
           <AddressBar

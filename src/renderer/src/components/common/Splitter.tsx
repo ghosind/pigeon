@@ -6,7 +6,11 @@ type SplitterProps = {
   onDragEnd?: () => void
 }
 
-export default function Splitter({ onDrag, onDragStart, onDragEnd }: SplitterProps) {
+export default function Splitter({
+  onDrag,
+  onDragStart,
+  onDragEnd
+}: SplitterProps): React.ReactElement {
   const ref = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
@@ -15,18 +19,18 @@ export default function Splitter({ onDrag, onDragStart, onDragEnd }: SplitterPro
 
     let dragging = false
 
-    const onMouseDown = (e: MouseEvent) => {
+    const onMouseDown = (e: MouseEvent): void => {
       dragging = true
       onDragStart && onDragStart()
       e.preventDefault()
     }
 
-    const onMouseMove = (e: MouseEvent) => {
+    const onMouseMove = (e: MouseEvent): void => {
       if (!dragging) return
       onDrag(e.movementX)
     }
 
-    const onMouseUp = () => {
+    const onMouseUp = (): void => {
       if (!dragging) return
       dragging = false
       onDragEnd && onDragEnd()

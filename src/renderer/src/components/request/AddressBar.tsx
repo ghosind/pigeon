@@ -1,7 +1,5 @@
 import { useState } from 'react'
-import {
-  Box, TextField, Select, MenuItem, Button, FormControl, InputLabel,
-} from '@mui/material'
+import { Box, TextField, Select, MenuItem, Button, FormControl, InputLabel } from '@mui/material'
 import SendIcon from '@mui/icons-material/Send'
 import CancelIcon from '@mui/icons-material/Cancel'
 import { HttpMethod, HttpRequest, KeyValuePair } from '@renderer/types/request'
@@ -15,14 +13,20 @@ type AddressBarProps = {
   onCancel: () => void
 }
 
-export default function AddressBar({ request, onChange, onSend, isLoading, onCancel }: AddressBarProps) {
+export default function AddressBar({
+  request,
+  onChange,
+  onSend,
+  isLoading,
+  onCancel
+}: AddressBarProps): React.ReactElement {
   const [isErr, setIsErr] = useState(false)
 
-  const handleChange = (value: Partial<HttpRequest>) => {
+  const handleChange = (value: Partial<HttpRequest>): void => {
     onChange({ ...request, ...value })
   }
 
-  const handleURLChange = (value: string) => {
+  const handleURLChange = (value: string): void => {
     const params: KeyValuePair[] = []
     const urlObj = new Url(value)
     urlObj.searchParams.forEach((v, k) => {
@@ -32,7 +36,7 @@ export default function AddressBar({ request, onChange, onSend, isLoading, onCan
     onChange({ ...request, url: value, params })
   }
 
-  const handleSend = () => {
+  const handleSend = (): void => {
     try {
       if (!request.url) throw new Error('Invalid URL')
 
@@ -40,6 +44,7 @@ export default function AddressBar({ request, onChange, onSend, isLoading, onCan
       setIsErr(false)
       onSend()
     } catch (e) {
+      console.error(e)
       setIsErr(true)
     }
   }

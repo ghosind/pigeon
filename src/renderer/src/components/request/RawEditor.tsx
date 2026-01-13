@@ -5,7 +5,7 @@ type RawEditorProps = {
   onChange: (s: string) => void
 }
 
-export default function RawEditor({ body, onChange }: RawEditorProps) {
+export default function RawEditor({ body, onChange }: RawEditorProps): React.ReactElement {
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <Box sx={{ flex: 1 }}>

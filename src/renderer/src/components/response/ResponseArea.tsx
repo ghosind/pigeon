@@ -3,12 +3,13 @@ import { Box, Typography, Divider } from '@mui/material'
 import ResponseHeader from './ResponseHeader'
 import BodyViewer from './BodyViewer'
 import HeadersViewer from './HeadersViewer'
+import { HTTPResponse } from '@renderer/types/response'
 
 type ResponseAreaProps = {
-  response: any
+  response: HTTPResponse | null
 }
 
-export default function ResponseArea({ response }: ResponseAreaProps) {
+export default function ResponseArea({ response }: ResponseAreaProps): React.ReactElement | null {
   const [panel, setPanel] = React.useState<string>('body')
 
   return (

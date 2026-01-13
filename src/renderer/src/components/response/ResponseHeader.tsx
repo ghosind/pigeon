@@ -1,15 +1,18 @@
-import {
-  Box, Typography, Chip, FormControl, Select, MenuItem,
-} from '@mui/material'
+import { Box, Typography, Chip, FormControl, Select, MenuItem } from '@mui/material'
+import { HTTPResponse } from '@renderer/types/response'
 import { formatSize } from '@shared/utils/unit'
 
 type ResponseHeaderProps = {
-  response: any
+  response: HTTPResponse | null
   panel: string
   setPanel: (p: string) => void
 }
 
-export default function ResponseHeader({ response, panel, setPanel }: ResponseHeaderProps) {
+export default function ResponseHeader({
+  response,
+  panel,
+  setPanel
+}: ResponseHeaderProps): React.ReactElement | null {
   if (!response) {
     return null
   }
@@ -17,12 +20,12 @@ export default function ResponseHeader({ response, panel, setPanel }: ResponseHe
   const status = response ? response.status : null
   const statusText = response ? response.statusText : ''
   const timeMs = response?.duration
-  const size = response?.size ??
-    (typeof response?.body === 'string' ? response.body.length : undefined)
+  const size =
+    response?.size ?? (typeof response?.body === 'string' ? response.body.length : undefined)
 
   return (
     <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', mb: 1, flexWrap: 'wrap' }}>
-      <FormControl size="small" sx={{ ml: 2, minWidth: 100 }} variant='standard'>
+      <FormControl size="small" sx={{ ml: 2, minWidth: 100 }} variant="standard">
         <Select value={panel} onChange={(e) => setPanel(e.target.value as string)}>
           <MenuItem value="body">Body</MenuItem>
           <MenuItem value="headers">Headers</MenuItem>
@@ -33,7 +36,7 @@ export default function ResponseHeader({ response, panel, setPanel }: ResponseHe
         <Typography variant="body2">Status</Typography>
         <Chip
           label={`${status ?? ''} ${statusText ?? ''}`}
-          color={status >= 400 ? 'error' : 'success'}
+          color={status && status >= 400 ? 'error' : 'success'}
           size="small"
         />
       </Box>

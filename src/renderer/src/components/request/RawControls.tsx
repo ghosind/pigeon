@@ -8,8 +8,13 @@ type RawControlsProps = {
   setLanguage: (s: string) => void
 }
 
-export default function RawControls({ body, onChange, language, setLanguage }: RawControlsProps) {
-  const prettify = (src = body) => {
+export default function RawControls({
+  body,
+  onChange,
+  language,
+  setLanguage
+}: RawControlsProps): React.ReactElement {
+  const prettify = (src = body): string => {
     if (!src || language !== 'JSON') {
       return src
     }
@@ -23,7 +28,7 @@ export default function RawControls({ body, onChange, language, setLanguage }: R
     }
   }
 
-  const handleLanguageChange = (ev: SelectChangeEvent<string>) => {
+  const handleLanguageChange = (ev: SelectChangeEvent<string>): void => {
     setLanguage(ev.target.value as string)
   }
 

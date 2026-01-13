@@ -10,10 +10,10 @@ type RequestAreaProps = {
   onChange: (request: HttpRequest) => void
 }
 
-export default function RequestArea({ request, onChange }: RequestAreaProps) {
+export default function RequestArea({ request, onChange }: RequestAreaProps): React.ReactElement {
   const [tab, setTab] = React.useState(0)
 
-  const onParamsChange = (params: HttpRequest['params']) => {
+  const onParamsChange = (params: HttpRequest['params']): void => {
     const { url } = request
     const urlObj = new Url(url || '')
     const search = new URLSearchParams()
@@ -27,15 +27,15 @@ export default function RequestArea({ request, onChange }: RequestAreaProps) {
     onChange({
       ...request,
       url: urlObj.toString(),
-      params,
+      params
     })
   }
 
-  const onHeadersChange = (headers: HttpRequest['headers']) => {
+  const onHeadersChange = (headers: HttpRequest['headers']): void => {
     onChange({ ...request, headers })
   }
 
-  const onBodyChange = (body: HttpRequest['body']) => {
+  const onBodyChange = (body: HttpRequest['body']): void => {
     onChange({ ...request, body })
   }
 

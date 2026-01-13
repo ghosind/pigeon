@@ -1,12 +1,19 @@
 import {
-  Box, Table, TableBody, TableCell, TableContainer, TableHead, TableRow
+  Box,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow
 } from '@mui/material'
+import { HTTPResponse } from '@renderer/types/response'
 
 type HeadersViewerProps = {
-  response: any
+  response: HTTPResponse | null
 }
 
-export default function HeadersViewer({ response }: HeadersViewerProps) {
+export default function HeadersViewer({ response }: HeadersViewerProps): React.ReactElement {
   const headers = response?.headers
     ? Object.entries(response.headers as Record<string, string>)
     : []

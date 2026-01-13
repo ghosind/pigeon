@@ -6,8 +6,10 @@ type ModeSelectProps = {
   onChange: (mode: string) => void
 }
 
-export default function ModeSelect({ mode, onChange }: ModeSelectProps) {
-  const handle = (ev: SelectChangeEvent<string>) => onChange(ev.target.value as string)
+export default function ModeSelect({ mode, onChange }: ModeSelectProps): React.ReactElement {
+  const handle = (ev: SelectChangeEvent<string>): void => {
+    onChange(ev.target.value as string)
+  }
 
   return (
     <Box sx={{ p: 1 }}>

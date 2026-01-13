@@ -1,5 +1,13 @@
 import {
-  Box, IconButton, Checkbox, Table, TableBody, TableCell, TableHead, TableRow, InputBase
+  Box,
+  IconButton,
+  Checkbox,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableRow,
+  InputBase
 } from '@mui/material'
 import DeleteIcon from '@mui/icons-material/Delete'
 import { KeyValuePair } from '@renderer/types/request'
@@ -9,15 +17,18 @@ type KeyValueEditorProps = {
   onChange: (rows: KeyValuePair[]) => void
 }
 
-export default function KeyValueEditor({ rows, onChange }: KeyValueEditorProps) {
-  const updateRow = (idx: number, patch: Partial<KeyValuePair>) => {
+export default function KeyValueEditor({
+  rows,
+  onChange
+}: KeyValueEditorProps): React.ReactElement {
+  const updateRow = (idx: number, patch: Partial<KeyValuePair>): void => {
     const isPlaceholder = idx === rows.length
 
     if (isPlaceholder) {
       const newRow: KeyValuePair = {
         key: patch.key ?? '',
         value: patch.value ?? '',
-        enabled: patch.enabled ?? true,
+        enabled: patch.enabled ?? true
       }
 
       if (newRow.key === '' && newRow.value === '' && patch.enabled === undefined) {
@@ -30,19 +41,21 @@ export default function KeyValueEditor({ rows, onChange }: KeyValueEditorProps) 
     }
   }
 
-  const removeRow = (idx: number) => onChange(rows.filter((_, index) => index !== idx))
+  const removeRow = (idx: number): void => {
+    onChange(rows.filter((_, index) => index !== idx))
+  }
 
   return (
     <Box>
       <Table size="small">
         <TableHead>
-            <TableRow sx={{ height: 36 }}>
-              <TableCell sx={{ width: 80, fontSize: '14px', py: '6px' }}></TableCell>
-              <TableCell sx={{ fontSize: '14px', py: '6px' }}>Key</TableCell>
-              <TableCell sx={{ fontSize: '14px', py: '6px' }}>Value</TableCell>
-              <TableCell sx={{ width: 60, fontSize: '14px', py: '6px' }}></TableCell>
-            </TableRow>
-          </TableHead>
+          <TableRow sx={{ height: 36 }}>
+            <TableCell sx={{ width: 80, fontSize: '14px', py: '6px' }}></TableCell>
+            <TableCell sx={{ fontSize: '14px', py: '6px' }}>Key</TableCell>
+            <TableCell sx={{ fontSize: '14px', py: '6px' }}>Value</TableCell>
+            <TableCell sx={{ width: 60, fontSize: '14px', py: '6px' }}></TableCell>
+          </TableRow>
+        </TableHead>
         <TableBody>
           {[...rows, { key: '', value: '', enabled: undefined }].map((row, index) => {
             const isPlaceholder = index === rows.length
@@ -59,8 +72,8 @@ export default function KeyValueEditor({ rows, onChange }: KeyValueEditorProps) 
                   <InputBase
                     size="small"
                     fullWidth
-                    placeholder='Key'
-                    value={isPlaceholder ? '' : row.key ?? ''}
+                    placeholder="Key"
+                    value={isPlaceholder ? '' : (row.key ?? '')}
                     onChange={(e) => updateRow(index, { key: e.target.value })}
                   />
                 </TableCell>
@@ -68,8 +81,8 @@ export default function KeyValueEditor({ rows, onChange }: KeyValueEditorProps) 
                   <InputBase
                     size="small"
                     fullWidth
-                    placeholder='Value'
-                    value={isPlaceholder ? '' : row.value ?? ''}
+                    placeholder="Value"
+                    value={isPlaceholder ? '' : (row.value ?? '')}
                     onChange={(e) => updateRow(index, { value: e.target.value })}
                   />
                 </TableCell>
