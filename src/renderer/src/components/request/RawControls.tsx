@@ -29,7 +29,13 @@ export default function RawControls({ body, onChange, language, setLanguage }: R
 
   return (
     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mr: 1 }}>
-      <Select size="small" value={language} onChange={handleLanguageChange}>
+      <Select
+        size="small"
+        variant="standard"
+        sx={{ ml: 2, minWidth: 100 }}
+        value={language}
+        onChange={handleLanguageChange}
+      >
         <MenuItem value="JSON">JSON</MenuItem>
         <MenuItem value="Text">Text</MenuItem>
         <MenuItem value="XML">XML</MenuItem>

@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { Box, Paper } from '@mui/material'
 import AddressBar from '@renderer/components/request/AddressBar'
 import RequestArea from '@renderer/components/request/RequestArea'
-import ResponsePanel from '@renderer/components/ResponsePanel'
+import ResponseArea from '@renderer/components/response/ResponseArea'
 import Splitter from '@renderer/components/common/Splitter'
 import { HttpMethod, HttpRequest } from '../types/request'
 import { Request } from '@shared/types/request'
@@ -109,7 +109,7 @@ export default function RequestPage(): React.JSX.Element {
 
           <Box sx={{ width: `${100 - centerPct}%`, display: 'flex' }}>
             <Paper sx={{ p: 1, flex: 1, display: 'flex', minHeight: 0 }}>
-              <ResponsePanel response={response} />
+              <ResponseArea response={response} />
             </Paper>
           </Box>
         </Box>
