@@ -36,25 +36,24 @@ export default function KeyValueEditor({ rows, onChange }: KeyValueEditorProps) 
     <Box>
       <Table size="small">
         <TableHead>
-          <TableRow>
-            <TableCell sx={{ width: 80 }}></TableCell>
-            <TableCell>Key</TableCell>
-            <TableCell>Value</TableCell>
-            <TableCell sx={{ width: 60 }}></TableCell>
-          </TableRow>
-        </TableHead>
+            <TableRow sx={{ height: 36 }}>
+              <TableCell sx={{ width: 80, fontSize: '14px', py: '6px' }}></TableCell>
+              <TableCell sx={{ fontSize: '14px', py: '6px' }}>Key</TableCell>
+              <TableCell sx={{ fontSize: '14px', py: '6px' }}>Value</TableCell>
+              <TableCell sx={{ width: 60, fontSize: '14px', py: '6px' }}></TableCell>
+            </TableRow>
+          </TableHead>
         <TableBody>
           {[...rows, { key: '', value: '', enabled: undefined }].map((row, index) => {
             const isPlaceholder = index === rows.length
             return (
               <TableRow key={index}>
                 <TableCell sx={{ width: 80 }}>
-                  {isPlaceholder ? null : (
-                    <Checkbox
-                      checked={row.enabled ?? true}
-                      onChange={(e) => updateRow(index, { enabled: e.target.checked })}
-                    />
-                  )}
+                  <Checkbox
+                    checked={row.enabled ?? true}
+                    onChange={(e) => updateRow(index, { enabled: e.target.checked })}
+                    sx={{ visibility: isPlaceholder ? 'hidden' : 'visible' }}
+                  />
                 </TableCell>
                 <TableCell>
                   <InputBase
@@ -75,14 +74,13 @@ export default function KeyValueEditor({ rows, onChange }: KeyValueEditorProps) 
                   />
                 </TableCell>
                 <TableCell>
-                  {!isPlaceholder && (
-                    <IconButton
-                      size="small"
-                      onClick={() => removeRow(index)}
-                    >
-                      <DeleteIcon fontSize="small" />
-                    </IconButton>
-                  )}
+                  <IconButton
+                    size="small"
+                    onClick={() => removeRow(index)}
+                    sx={{ visibility: isPlaceholder ? 'hidden' : 'visible' }}
+                  >
+                    <DeleteIcon fontSize="small" />
+                  </IconButton>
                 </TableCell>
               </TableRow>
             )

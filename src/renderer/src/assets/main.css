@@ -37,10 +37,10 @@ code {
 }
 
 .logo {
-  margin-bottom: 20px;
+  margin-bottom: 16px;
   -webkit-user-drag: none;
-  height: 128px;
-  width: 128px;
+  height: 120px;
+  width: 120px;
   will-change: filter;
   transition: filter 300ms;
 }
@@ -50,26 +50,26 @@ code {
 }
 
 .creator {
-  font-size: 14px;
-  line-height: 16px;
+  font-size: 13px;
+  line-height: 15px;
   color: var(--ev-c-text-2);
   font-weight: 600;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
 }
 
 .text {
-  font-size: 28px;
+  font-size: 26px;
   color: var(--ev-c-text-1);
   font-weight: 700;
-  line-height: 32px;
+  line-height: 30px;
   text-align: center;
-  margin: 0 10px;
-  padding: 16px 0;
+  margin: 0 8px;
+  padding: 12px 0;
 }
 
 .tip {
-  font-size: 16px;
-  line-height: 24px;
+  font-size: 14px;
+  line-height: 20px;
   color: var(--ev-c-text-2);
   font-weight: 600;
 }
@@ -92,7 +92,7 @@ code {
 
 .actions {
   display: flex;
-  padding-top: 32px;
+  padding-top: 24px;
   margin: -6px;
   flex-wrap: wrap;
   justify-content: flex-start;
@@ -112,9 +112,9 @@ code {
   font-weight: 600;
   white-space: nowrap;
   border-radius: 20px;
-  padding: 0 20px;
-  line-height: 38px;
-  font-size: 14px;
+  padding: 0 18px;
+  line-height: 34px;
+  font-size: 13px;
   border-color: var(--ev-button-alt-border);
   color: var(--ev-button-alt-text);
   background-color: var(--ev-button-alt-bg);
@@ -128,14 +128,14 @@ code {
 
 .versions {
   position: absolute;
-  bottom: 30px;
+  bottom: 20px;
   margin: 0 auto;
-  padding: 15px 0;
+  padding: 12px 0;
   font-family: 'Menlo', 'Lucida Console', monospace;
   display: inline-flex;
   overflow: hidden;
   align-items: center;
-  border-radius: 22px;
+  border-radius: 20px;
   background-color: #202127;
   backdrop-filter: blur(24px);
 }
@@ -144,9 +144,9 @@ code {
   display: block;
   float: left;
   border-right: 1px solid var(--ev-c-gray-1);
-  padding: 0 20px;
-  font-size: 14px;
-  line-height: 14px;
+  padding: 0 16px;
+  font-size: 13px;
+  line-height: 12px;
   opacity: 0.8;
   &:last-child {
     border: none;
