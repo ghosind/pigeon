@@ -1,9 +1,9 @@
 import React, { useState } from 'react'
 import { Box, Paper } from '@mui/material'
-import AddressBar from '../components/AddressBar'
-import RequestArea from '../components/RequestArea'
-import ResponsePanel from '../components/ResponsePanel'
-import Splitter from '../components/Splitter'
+import AddressBar from '@renderer/components/request/AddressBar'
+import RequestArea from '@renderer/components/request/RequestArea'
+import ResponsePanel from '@renderer/components/ResponsePanel'
+import Splitter from '@renderer/components/common/Splitter'
 import { HttpMethod, HttpRequest } from '../types/request'
 import { Request } from '@shared/types/request'
 
@@ -19,28 +19,37 @@ export default function RequestPage(): React.JSX.Element {
 
   const onDragCenter = React.useCallback((deltaX: number) => {
     const container = document.getElementById('req-resp-container')
-    if (!container) return
+    if (!container) {
+      return
+    }
     const rect = container.getBoundingClientRect()
-    if (rect.width <= 0) return
+    if (rect.width <= 0) {
+      return
+    }
     const deltaPct = (deltaX / rect.width) * 100
     setCenterPct((prev) => Math.min(90, Math.max(10, prev + deltaPct)))
   }, [])
 
   const doSend = async () => {
     try {
-      const urlObj = new URL(request?.url || '')
-      request?.params?.forEach((row) => {
-        if (row.key) urlObj.searchParams.set(row.key, row.value || '')
+      let url = request?.url || ''
+      if (!/^http(s)?:\/\//.test(url)) {
+        url = `http://${url}`
+      }
+      let urlObj = new URL(url)
+
+      const headers = {}
+      request?.headers?.forEach((row) => {
+        if (row.key && row.enabled) {
+          headers[row.key] = row.value || ''
+        }
       })
       const req: Request = {
         id: Date.now().toString(),
         url: urlObj.toString(),
         method: request?.method as string,
-        headers: {}
+        headers: headers
       }
-      request?.headers?.forEach((row) => {
-        if (row.key) (req.headers as any)[row.key] = row.value || ''
-      })
       if (request?.body?.length && request?.method?.toUpperCase() !== 'GET') {
         req.body = request.body
       }
@@ -69,7 +78,14 @@ export default function RequestPage(): React.JSX.Element {
   }
 
   return (
-    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'row', p: 1, gap: 1, bgcolor: 'background.default' }}>
+    <Box sx={{
+      height: '100%',
+      display: 'flex',
+      flexDirection: 'row',
+      p: 1,
+      gap: 1,
+      bgcolor: 'background.default'
+    }}>
       <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
         <Paper elevation={1} sx={{ p: 1, mb: 1, flex: 'none' }}>
           <AddressBar
@@ -79,7 +95,10 @@ export default function RequestPage(): React.JSX.Element {
           />
         </Paper>
 
-        <Box id="req-resp-container" sx={{ display: 'flex', flex: 1, gap: 1, alignItems: 'stretch', minHeight: 0 }}>
+        <Box
+          id="req-resp-container"
+          sx={{ display: 'flex', flex: 1, gap: 1, alignItems: 'stretch', minHeight: 0 }}
+        >
           <Box sx={{ width: `${centerPct}%`, display: 'flex' }}>
             <Paper sx={{ p: 1, flex: 1, display: 'flex', minHeight: 0 }}>
               <RequestArea request={request} onChange={setRequest} />

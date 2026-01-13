@@ -4,6 +4,7 @@ import {
 } from '@mui/material'
 import SendIcon from '@mui/icons-material/Send'
 import { HttpMethod, HttpRequest, KeyValuePair } from '@renderer/types/request'
+import { Url } from '@shared/utils/url'
 
 type AddressBarProps = {
   request: HttpRequest
@@ -11,9 +12,7 @@ type AddressBarProps = {
   onSend: () => void
 }
 
-export default function AddressBar({
-  request, onChange, onSend,
-}: AddressBarProps) {
+export default function AddressBar({ request, onChange, onSend }: AddressBarProps) {
   const [isErr, setIsErr] = useState(false)
 
   const handleChange = (value: Partial<HttpRequest>) => {
@@ -22,21 +21,19 @@ export default function AddressBar({
 
   const handleURLChange = (value: string) => {
     const params: KeyValuePair[] = []
-    try {
-      const urlObj = new URL(value)
-      urlObj.searchParams.forEach((v, k) => {
-        params.push({ key: k, value: v, enabled: true })
-      })
-    } catch (e) {
-      // ignore
-    }
+    const urlObj = new Url(value)
+    urlObj.searchParams.forEach((v, k) => {
+      params.push({ key: k, value: v, enabled: true })
+    })
 
     onChange({ ...request, url: value, params })
   }
 
   const handleSend = () => {
     try {
-      new URL(request.url || '')
+      if (!request.url) throw new Error('Invalid URL')
+
+      new Url(request.url || '')
       setIsErr(false)
       onSend()
     } catch (e) {

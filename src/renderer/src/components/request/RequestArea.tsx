@@ -3,6 +3,7 @@ import { Box, Tabs, Tab } from '@mui/material'
 import KeyValueEditor from './KeyValueEditor'
 import BodyEditor from './BodyEditor'
 import { HttpRequest } from '@renderer/types/request'
+import { Url } from '@shared/utils/url'
 
 type RequestAreaProps = {
   request: HttpRequest
@@ -14,7 +15,7 @@ export default function RequestArea({ request, onChange }: RequestAreaProps) {
 
   const onParamsChange = (params: HttpRequest['params']) => {
     const { url } = request
-    const urlObj = new URL(url || '');
+    const urlObj = new Url(url || '')
     const search = new URLSearchParams()
     params?.forEach((row) => {
       if (row.key && row.enabled === true) {
