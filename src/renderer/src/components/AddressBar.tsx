@@ -3,7 +3,7 @@ import {
   Box, TextField, Select, MenuItem, Button, FormControl, InputLabel,
 } from '@mui/material'
 import SendIcon from '@mui/icons-material/Send'
-import { HttpMethod, HttpRequest } from '@renderer/types/request'
+import { HttpMethod, HttpRequest, KeyValuePair } from '@renderer/types/request'
 
 type AddressBarProps = {
   request: HttpRequest
@@ -18,6 +18,20 @@ export default function AddressBar({
 
   const handleChange = (value: Partial<HttpRequest>) => {
     onChange({ ...request, ...value })
+  }
+
+  const handleURLChange = (value: string) => {
+    const params: KeyValuePair[] = []
+    try {
+      const urlObj = new URL(value)
+      urlObj.searchParams.forEach((v, k) => {
+        params.push({ key: k, value: v, enabled: true })
+      })
+    } catch (e) {
+      // ignore
+    }
+
+    onChange({ ...request, url: value, params })
   }
 
   const handleSend = () => {
@@ -53,7 +67,7 @@ export default function AddressBar({
         fullWidth
         value={request.url}
         error={isErr}
-        onChange={(e) => handleChange({ url: e.target.value })}
+        onChange={(e) => handleURLChange(e.target.value)}
         placeholder="Enter URL or paste text"
       />
 

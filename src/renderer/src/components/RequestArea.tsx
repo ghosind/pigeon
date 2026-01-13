@@ -13,7 +13,21 @@ export default function RequestArea({ request, onChange }: RequestAreaProps) {
   const [tab, setTab] = React.useState(0)
 
   const onParamsChange = (params: HttpRequest['params']) => {
-    onChange({ ...request, params })
+    const { url } = request
+    const urlObj = new URL(url || '');
+    const search = new URLSearchParams()
+    params?.forEach((row) => {
+      if (row.key && row.enabled === true) {
+        search.append(row.key, row.value || '')
+      }
+    })
+    urlObj.search = search.toString()
+
+    onChange({
+      ...request,
+      url: urlObj.toString(),
+      params,
+    })
   }
 
   const onHeadersChange = (headers: HttpRequest['headers']) => {

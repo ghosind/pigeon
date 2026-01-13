@@ -4,13 +4,15 @@ import AddressBar from '../components/AddressBar'
 import RequestArea from '../components/RequestArea'
 import ResponsePanel from '../components/ResponsePanel'
 import Splitter from '../components/Splitter'
-import { HttpRequest } from '../types/request'
+import { HttpMethod, HttpRequest } from '../types/request'
 import { Request } from '@shared/types/request'
 
 export type KeyValue = { id: string; key?: string; value?: string; enabled?: boolean }
 
 export default function RequestPage(): React.JSX.Element {
-  const [request, setRequest] = useState<HttpRequest>({});
+  const [request, setRequest] = useState<HttpRequest>({
+    method: HttpMethod.GET,
+  });
   const [response, setResponse] = useState<any>(null)
 
   const [centerPct, setCenterPct] = useState<number>(58)
@@ -31,7 +33,7 @@ export default function RequestPage(): React.JSX.Element {
         if (row.key) urlObj.searchParams.set(row.key, row.value || '')
       })
       const req: Request = {
-        id: '',
+        id: Date.now().toString(),
         url: urlObj.toString(),
         method: request?.method as string,
         headers: {}
@@ -39,15 +41,30 @@ export default function RequestPage(): React.JSX.Element {
       request?.headers?.forEach((row) => {
         if (row.key) (req.headers as any)[row.key] = row.value || ''
       })
-      if (request?.body && request.body.length && request?.method?.toUpperCase() !== 'GET') req.body = request.body
+      if (request?.body?.length && request?.method?.toUpperCase() !== 'GET') {
+        req.body = request.body
+      }
 
-      const res = await window.api.sendRequest(req) as Response
+      const response = await window.api.sendRequest(req) as Response
 
       const resHeaders: Record<string, string> = {}
-      res.headers.forEach((v, k) => (resHeaders[k] = v))
-      setResponse({ status: res.status, statusText: res.statusText, headers: resHeaders, body: res.body })
+      Object.entries(response.headers).forEach(([key, value]) => {
+        resHeaders[key] = Array.isArray(value) ? value.join('; ') : value
+      })
+
+      setResponse({
+        status: response.status,
+        statusText: response.statusText,
+        headers: resHeaders,
+        body: response.body
+      })
     } catch (err) {
-      setResponse({ status: 0, statusText: String(err), headers: {}, body: '' })
+      setResponse({
+        status: 0,
+        statusText: String(err),
+        headers: {},
+        body: ''
+      })
     }
   }
 
