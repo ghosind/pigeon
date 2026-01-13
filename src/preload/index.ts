@@ -1,15 +1,12 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
+import { IPC_REQUEST_ABORT, IPC_REQUEST_SEND } from '@shared/constants/channels'
 
-// Custom APIs for renderer
 const api = {
-  sendRequest: (req) => ipcRenderer.invoke('request:send', req),
-  abortRequest: (id) => ipcRenderer.invoke('request:abort', id)
+  sendRequest: (req) => ipcRenderer.invoke(IPC_REQUEST_SEND, req),
+  abortRequest: (id) => ipcRenderer.invoke(IPC_REQUEST_ABORT, id)
 }
 
-// Use `contextBridge` APIs to expose Electron APIs to
-// renderer only if context isolation is enabled, otherwise
-// just add to the DOM global.
 if (process.contextIsolated) {
   try {
     contextBridge.exposeInMainWorld('electron', electronAPI)

@@ -1,4 +1,5 @@
 import { request } from 'undici'
+import { STATUS_CODES } from 'http'
 import { Request, Response } from '@shared/types'
 import { createAgent } from './agent'
 import { normalizeError } from './error'
@@ -18,6 +19,7 @@ export async function sendHttpRequest(req: Request, signal?: AbortSignal): Promi
 
     return {
       status: res.statusCode,
+      statusText: STATUS_CODES[res.statusCode] || '',
       headers: res.headers as Record<string, string>,
       body: await res.body.text(),
       duration: Date.now() - start

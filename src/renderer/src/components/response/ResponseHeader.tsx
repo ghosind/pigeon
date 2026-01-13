@@ -10,9 +10,13 @@ type ResponseHeaderProps = {
 }
 
 export default function ResponseHeader({ response, panel, setPanel }: ResponseHeaderProps) {
+  if (!response) {
+    return null
+  }
+
   const status = response ? response.status : null
   const statusText = response ? response.statusText : ''
-  const timeMs = response?.time
+  const timeMs = response?.duration
   const size = response?.size ??
     (typeof response?.body === 'string' ? response.body.length : undefined)
 
@@ -27,15 +31,11 @@ export default function ResponseHeader({ response, panel, setPanel }: ResponseHe
 
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
         <Typography variant="body2">Status</Typography>
-        {response ? (
-          <Chip
-            label={`${status} ${statusText}`}
-            color={status >= 400 ? 'error' : 'success'}
-            size="small"
-          />
-        ) : (
-          <Chip label="—" size="small" />
-        )}
+        <Chip
+          label={`${status ?? ''} ${statusText ?? ''}`}
+          color={status >= 400 ? 'error' : 'success'}
+          size="small"
+        />
       </Box>
 
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>

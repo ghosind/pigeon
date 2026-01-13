@@ -5,7 +5,8 @@ import RequestArea from '@renderer/components/request/RequestArea'
 import ResponseArea from '@renderer/components/response/ResponseArea'
 import Splitter from '@renderer/components/common/Splitter'
 import { HttpMethod, HttpRequest } from '../types/request'
-import { Request } from '@shared/types/request'
+import { Request, Response } from '@shared/types'
+import { HTTPResponse } from '@renderer/types/response'
 
 export type KeyValue = { id: string; key?: string; value?: string; enabled?: boolean }
 
@@ -13,7 +14,9 @@ export default function RequestPage(): React.JSX.Element {
   const [request, setRequest] = useState<HttpRequest>({
     method: HttpMethod.GET,
   });
-  const [response, setResponse] = useState<any>(null)
+  const [response, setResponse] = useState<HTTPResponse | null>()
+  const [isLoading, setIsLoading] = useState<boolean>(false)
+  const [currentReqId, setCurrentReqId] = useState<string | null>(null)
 
   const [centerPct, setCenterPct] = useState<number>(58)
 
@@ -32,6 +35,7 @@ export default function RequestPage(): React.JSX.Element {
 
   const doSend = async () => {
     try {
+      setIsLoading(true)
       let url = request?.url || ''
       if (!/^http(s)?:\/\//.test(url)) {
         url = `http://${url}`
@@ -54,6 +58,7 @@ export default function RequestPage(): React.JSX.Element {
         req.body = request.body
       }
 
+      setCurrentReqId(req.id)
       const response = await window.api.sendRequest(req) as Response
 
       const resHeaders: Record<string, string> = {}
@@ -61,11 +66,14 @@ export default function RequestPage(): React.JSX.Element {
         resHeaders[key] = Array.isArray(value) ? value.join('; ') : value
       })
 
+      debugger
+
       setResponse({
         status: response.status,
         statusText: response.statusText,
         headers: resHeaders,
-        body: response.body
+        body: response.body,
+        duration: response.duration
       })
     } catch (err) {
       setResponse({
@@ -74,7 +82,18 @@ export default function RequestPage(): React.JSX.Element {
         headers: {},
         body: ''
       })
+    } finally {
+      setIsLoading(false)
+      setCurrentReqId(null)
     }
+  }
+
+  const handleCancel = () => {
+    if (currentReqId) {
+      window.api.abortRequest(currentReqId)
+    }
+    setIsLoading(false)
+    setCurrentReqId(null)
   }
 
   return (
@@ -92,6 +111,8 @@ export default function RequestPage(): React.JSX.Element {
             request={request}
             onChange={setRequest}
             onSend={doSend}
+            isLoading={isLoading}
+            onCancel={handleCancel}
           />
         </Paper>
 

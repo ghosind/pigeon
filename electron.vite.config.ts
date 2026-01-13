@@ -11,7 +11,14 @@ export default defineConfig({
       }
     }
   },
-  preload: {},
+  preload: {
+    resolve: {
+      alias: {
+        '@preload': resolve('src/preload'),
+        '@shared': resolve('src/shared')
+      }
+    }
+  },
   renderer: {
     resolve: {
       alias: {
