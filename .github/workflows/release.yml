@@ -1,0 +1,115 @@
+name: Release
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  build:
+    name: Build per platform
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build (Linux)
+        if: runner.os == 'Linux'
+        run: npm run build:linux
+
+      - name: Build (macOS)
+        if: runner.os == 'macOS'
+        run: npm run build:mac
+
+      - name: Build (Windows)
+        if: runner.os == 'Windows'
+        run: npm run build:win
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ matrix.os }}-artifacts
+          path: |
+            dist/**
+            out/**
+            release/**
+            build/**
+
+  publish:
+    name: Publish to GitHub Release
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Download all build artifacts
+        uses: actions/download-artifact@v3
+        with:
+          path: artifacts
+
+      - name: Upload artifacts to release
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+
+            const releaseId = context.payload.release && context.payload.release.id;
+            if (!releaseId) {
+              core.setFailed('Release id not found in event payload');
+              return;
+            }
+
+            function walk(dir) {
+              let results = [];
+              const list = fs.readdirSync(dir);
+              list.forEach(function(file) {
+                file = path.join(dir, file);
+                const stat = fs.statSync(file);
+                if (stat && stat.isDirectory()) {
+                  results = results.concat(walk(file));
+                } else {
+                  results.push(file);
+                }
+              });
+              return results;
+            }
+
+            const artifactsDir = path.join(process.cwd(), 'artifacts');
+            if (!fs.existsSync(artifactsDir)) {
+              core.info('No artifacts directory found');
+              return;
+            }
+
+            const files = walk(artifactsDir);
+            if (files.length === 0) {
+              core.info('No files found to upload');
+              return;
+            }
+
+            for (const filePath of files) {
+              const content = fs.readFileSync(filePath);
+              const name = path.basename(filePath);
+              core.info(`Uploading ${name} (size=${content.length})`);
+              await github.rest.repos.uploadReleaseAsset({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                release_id: releaseId,
+                name,
+                data: content,
+                headers: {
+                  'content-type': 'application/octet-stream',
+                  'content-length': content.length
+                }
+              });
+            }
