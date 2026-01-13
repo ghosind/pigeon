@@ -15,7 +15,6 @@ dist/
 dist-electron/
 out/
 release/
-build/
 app-builds/
 
 # electron-builder / forge

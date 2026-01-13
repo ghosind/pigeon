@@ -1,10 +1,13 @@
-appId: com.electron.app
+appId: com.ghosind.pigeon
 productName: pigeon
 directories:
   buildResources: build
+publish:
+  provider: github
+  releaseType: release
 files:
+  - '**/*'
   - '!**/.vscode/*'
-  - '!src/*'
   - '!electron.vite.config.{js,ts,mjs,cjs}'
   - '!{.eslintcache,eslint.config.mjs,.prettierignore,.prettierrc.yaml,dev-app-update.yml,CHANGELOG.md,README.md}'
   - '!{.env,.env.*,.npmrc,pnpm-lock.yaml}'
@@ -19,27 +22,25 @@ nsis:
   uninstallDisplayName: ${productName}
   createDesktopShortcut: always
 mac:
+  identity: null                     # CI ad-hoc 签名
+  hardenedRuntime: true
+  entitlements: build/entitlements.mac.plist
   entitlementsInherit: build/entitlements.mac.plist
+  icon: build/icon.icns
   extendInfo:
-    - NSCameraUsageDescription: Application requests access to the device's camera.
-    - NSMicrophoneUsageDescription: Application requests access to the device's microphone.
-    - NSDocumentsFolderUsageDescription: Application requests access to the user's Documents folder.
-    - NSDownloadsFolderUsageDescription: Application requests access to the user's Downloads folder.
+    NSCameraUsageDescription: Application requests access to the device's camera.
+    NSMicrophoneUsageDescription: Application requests access to the device's microphone.
+    NSDocumentsFolderUsageDescription: Application requests access to the user's Documents folder.
+    NSDownloadsFolderUsageDescription: Application requests access to the user's Downloads folder.
   notarize: false
 dmg:
   artifactName: ${name}-${version}.${ext}
 linux:
   target:
     - AppImage
-    - snap
     - deb
-  maintainer: electronjs.org
+  maintainer: Chen Su
   category: Utility
 appImage:
   artifactName: ${name}-${version}.${ext}
-npmRebuild: false
-publish:
-  provider: generic
-  url: https://example.com/auto-updates
-electronDownload:
-  mirror: https://npmmirror.com/mirrors/electron/
+npmRebuild: true
