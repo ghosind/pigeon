@@ -71,6 +71,17 @@ export default function AddressBar({
         value={request.url}
         error={isErr}
         onChange={(e) => handleURLChange(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+            e.preventDefault()
+            handleSend()
+          }
+
+          if (e.key === 'Escape') {
+            e.preventDefault()
+            onCancel()
+          }
+        }}
         disabled={isLoading}
         placeholder="Enter URL or paste text"
       />
