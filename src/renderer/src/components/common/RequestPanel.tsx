@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { Box, Paper } from '@mui/material'
 import AddressBar from '@renderer/components/request/AddressBar'
 import RequestArea from '@renderer/components/request/RequestArea'
@@ -91,23 +91,6 @@ export default function RequestPanel(): React.JSX.Element {
     setIsLoading(false)
     setCurrentReqId(null)
   }
-
-  useEffect(() => {
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
-        e.preventDefault()
-        void doSend()
-      }
-
-      if (e.key === 'Escape') {
-        e.preventDefault()
-        handleCancel()
-      }
-    }
-
-    window.addEventListener('keydown', onKeyDown)
-    return () => window.removeEventListener('keydown', onKeyDown)
-  }, [doSend, handleCancel])
 
   return (
     <Box

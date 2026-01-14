@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Box, TextField, Select, MenuItem, Button, FormControl } from '@mui/material'
 import SendIcon from '@mui/icons-material/Send'
 import CancelIcon from '@mui/icons-material/Cancel'
@@ -36,7 +36,7 @@ export default function AddressBar({
     onChange({ ...request, url: value, params })
   }
 
-  const handleSend = (): void => {
+  const handleSend = useCallback((): void => {
     try {
       if (!request.url) throw new Error('Invalid URL')
 
@@ -47,7 +47,24 @@ export default function AddressBar({
       console.error(e)
       setIsErr(true)
     }
-  }
+  }, [request.url, onSend])
+
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent): void => {
+      if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault()
+        handleSend()
+      }
+
+      if (e.key === 'Escape') {
+        e.preventDefault()
+        onCancel()
+      }
+    }
+
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [handleSend, onCancel])
 
   return (
     <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
