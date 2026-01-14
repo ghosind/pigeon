@@ -16,7 +16,7 @@ export default function RequestPanel(): React.JSX.Element {
   const [isLoading, setIsLoading] = useState<boolean>(false)
   const [currentReqId, setCurrentReqId] = useState<string | null>(null)
 
-  const [centerPct, setCenterPct] = useState<number>(58)
+  const [centerPct, setCenterPct] = useState<number>(50)
 
   const onDragCenter = React.useCallback((deltaX: number) => {
     const container = document.getElementById('req-resp-container')

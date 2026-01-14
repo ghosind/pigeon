@@ -50,10 +50,10 @@ export default function KeyValueEditor({
       <Table size="small">
         <TableHead>
           <TableRow sx={{ height: 36 }}>
-            <TableCell sx={{ width: 80, fontSize: '14px', py: '6px' }}></TableCell>
-            <TableCell sx={{ fontSize: '14px', py: '6px' }}>Key</TableCell>
-            <TableCell sx={{ fontSize: '14px', py: '6px' }}>Value</TableCell>
-            <TableCell sx={{ width: 60, fontSize: '14px', py: '6px' }}></TableCell>
+            <TableCell sx={{ width: 80 }}></TableCell>
+            <TableCell>Key</TableCell>
+            <TableCell>Value</TableCell>
+            <TableCell sx={{ width: 60 }}></TableCell>
           </TableRow>
         </TableHead>
         <TableBody>

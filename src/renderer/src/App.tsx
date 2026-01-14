@@ -1,16 +1,11 @@
-import { ThemeProvider, createTheme } from '@mui/material/styles'
+import { ThemeProvider } from '@mui/material/styles'
 import CssBaseline from '@mui/material/CssBaseline'
 import RequestPage from './pages/RequestPage'
-
-const theme = createTheme({
-  palette: {
-    mode: 'light'
-  }
-})
+import { lightTheme } from './themes'
 
 function App(): React.JSX.Element {
   return (
-    <ThemeProvider theme={theme}>
+    <ThemeProvider theme={lightTheme}>
       <CssBaseline />
       <RequestPage />
     </ThemeProvider>

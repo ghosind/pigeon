@@ -61,7 +61,7 @@ export default function Splitter({
         userSelect: 'none'
       }}
     >
-      <div style={{ width: 2, background: 'rgba(0,0,0,0.12)', borderRadius: 1, height: '60%' }} />
+      <div style={{ width: 2, background: 'rgba(0,0,0,0.12)', borderRadius: 1, height: '100%' }} />
     </div>
   )
 }

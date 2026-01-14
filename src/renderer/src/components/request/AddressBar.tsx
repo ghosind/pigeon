@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Box, TextField, Select, MenuItem, Button, FormControl, InputLabel } from '@mui/material'
+import { Box, TextField, Select, MenuItem, Button, FormControl } from '@mui/material'
 import SendIcon from '@mui/icons-material/Send'
 import CancelIcon from '@mui/icons-material/Cancel'
 import { HttpMethod, HttpRequest, KeyValuePair } from '@renderer/types/request'
@@ -52,10 +52,7 @@ export default function AddressBar({
   return (
     <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
       <FormControl size="small" sx={{ minWidth: 110 }}>
-        <InputLabel id="method-label">Method</InputLabel>
         <Select
-          labelId="method-label"
-          label="Method"
           value={request.method}
           onChange={(e) => handleChange({ method: e.target.value as HttpMethod })}
           disabled={isLoading}
