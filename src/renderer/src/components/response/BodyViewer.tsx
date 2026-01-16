@@ -9,7 +9,7 @@ type BodyViewerProps = {
 
 export default function BodyViewer({ response }: BodyViewerProps): React.ReactElement {
   const contentType = response?.headers?.['content-type'] || ''
-  let language = useMemo(() => {
+  const language = useMemo(() => {
     if (contentType.includes('json')) {
       return 'json'
     } else if (contentType.includes('html')) {
@@ -18,28 +18,20 @@ export default function BodyViewer({ response }: BodyViewerProps): React.ReactEl
 
     return 'text'
   }, [contentType])
-  let body = useMemo(() => {
-    switch (language) {
-      case 'json':
-        try {
-          const j = JSON.parse(response?.body || '')
-          return JSON.stringify(j, null, 2)
-        } catch (e) {
-          console.error('Failed to parse JSON body:', e)
-          return response?.body || ''
-        }
-      default:
-        return response?.body || ''
+  const body = useMemo(() => {
+    if (contentType.includes('json') && response?.body) {
+      try {
+        return JSON.stringify(JSON.parse(response.body), null, 2)
+      } catch (e) {
+        console.error('Failed to parse JSON body:', e)
+      }
     }
-  }, [response?.body, language])
+    return response?.body || ''
+  }, [response, contentType])
 
   return (
     <Box sx={{ height: '100%', width: '100%' }}>
-      <RawEditor
-        language={language}
-        body={body}
-        readonly
-      />
+      <RawEditor language={language} body={body} readonly />
     </Box>
   )
 }

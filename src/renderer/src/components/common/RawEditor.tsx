@@ -1,9 +1,9 @@
 import { Box } from '@mui/material'
 import Editor from '@monaco-editor/react'
-import loader from '@monaco-editor/loader';
-import * as monaco from 'monaco-editor';
+import loader from '@monaco-editor/loader'
+import * as monaco from 'monaco-editor'
 
-loader.config({ monaco });
+loader.config({ monaco })
 
 type RawEditorProps = {
   language?: string
@@ -12,8 +12,13 @@ type RawEditorProps = {
   readonly?: boolean
 }
 
-export default function RawEditor({ language, body, onChange, readonly }: RawEditorProps): React.ReactElement {
-  const handleChange = (value: string | undefined) => {
+export default function RawEditor({
+  language,
+  body,
+  onChange,
+  readonly
+}: RawEditorProps): React.ReactElement {
+  const handleChange = (value: string | undefined): void => {
     if (onChange) {
       onChange(value ?? '')
     }
@@ -24,7 +29,7 @@ export default function RawEditor({ language, body, onChange, readonly }: RawEdi
       <Editor
         height="100%"
         width="100%"
-        language={language ?? "text"}
+        language={language ?? 'text'}
         value={body}
         onChange={handleChange}
         options={{
@@ -41,7 +46,7 @@ export default function RawEditor({ language, body, onChange, readonly }: RawEdi
           renderLineHighlight: 'line',
           folding: true,
           foldingStrategy: 'auto',
-          showFoldingControls: 'always',
+          showFoldingControls: 'always'
         }}
       />
     </Box>
