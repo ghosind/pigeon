@@ -1,8 +1,8 @@
 // agent.ts
 import { Agent, ProxyAgent } from 'undici'
-import { ProxyConfig, TLSConfig } from '@shared/types'
+import { HTTPProxyConfig, HTTPTLSConfig } from '@shared/types'
 
-export function createAgent(proxy?: ProxyConfig, tls?: TLSConfig): ProxyAgent | Agent {
+export function createAgent(proxy?: HTTPProxyConfig, tls?: HTTPTLSConfig): ProxyAgent | Agent {
   if (proxy) {
     return new ProxyAgent({
       uri: `${proxy.protocol ?? 'http'}://${proxy.host}:${proxy.port}`,

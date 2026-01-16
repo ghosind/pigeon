@@ -1,11 +1,12 @@
 import { Box, Button, Select, MenuItem } from '@mui/material'
 import { SelectChangeEvent } from '@mui/material/Select'
+import { HTTPContentType } from '@shared/types'
 
 type RawControlsProps = {
   body: string
   onChange: (s: string) => void
-  language: string
-  setLanguage: (s: string) => void
+  language: HTTPContentType
+  setLanguage: (s: HTTPContentType) => void
 }
 
 export default function RawControls({
@@ -29,7 +30,7 @@ export default function RawControls({
   }
 
   const handleLanguageChange = (ev: SelectChangeEvent<string>): void => {
-    setLanguage(ev.target.value as string)
+    setLanguage(ev.target.value as HTTPContentType)
   }
 
   return (

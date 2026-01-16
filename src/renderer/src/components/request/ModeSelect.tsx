@@ -16,6 +16,8 @@ export default function ModeSelect({ mode, onChange }: ModeSelectProps): React.R
       <Select size="small" value={mode} onChange={handle}>
         <MenuItem value="none">None</MenuItem>
         <MenuItem value="raw">Raw</MenuItem>
+        <MenuItem value="form">Form Data</MenuItem>
+        <MenuItem value="urlencoded">x-www-form-urlencoded</MenuItem>
       </Select>
     </Box>
   )

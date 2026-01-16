@@ -1,4 +1,4 @@
-import { Request, Response } from '@shared/types'
+import { HTTPRequest, HTTPResponse } from '@shared/types'
 import { InterceptorManager } from './interceptor'
 import { sendHttpRequest } from './httpClient'
 
@@ -6,19 +6,9 @@ export class RequestEngine {
   private interceptors = new InterceptorManager()
   private controllers = new Map<string, AbortController>()
 
-  constructor() {
-    this.interceptors.useRequest((req) => ({
-      ...req,
-      headers: {
-        'user-agent': 'MyElectronClient/1.0',
-        ...req.headers
-      }
-    }))
-  }
-
-  async send(req: Request): Promise<Response> {
+  async send(id: string, req: HTTPRequest): Promise<HTTPResponse> {
     const controller = new AbortController()
-    this.controllers.set(req.id, controller)
+    this.controllers.set(id, controller)
 
     const timeout = setTimeout(() => {
       controller.abort()
@@ -30,7 +20,7 @@ export class RequestEngine {
       return await this.interceptors.runResponse(res)
     } finally {
       clearTimeout(timeout)
-      this.controllers.delete(req.id)
+      this.controllers.delete(id)
     }
   }
 

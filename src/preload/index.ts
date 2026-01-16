@@ -1,10 +1,11 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
 import { IPC_REQUEST_ABORT, IPC_REQUEST_SEND } from '@shared/constants/channels'
+import { HTTPRequest } from '@shared/types'
 
 const api = {
-  sendRequest: (req) => ipcRenderer.invoke(IPC_REQUEST_SEND, req),
-  abortRequest: (id) => ipcRenderer.invoke(IPC_REQUEST_ABORT, id)
+  sendRequest: (id: string, req: HTTPRequest) => ipcRenderer.invoke(IPC_REQUEST_SEND, id, req),
+  abortRequest: (id: string) => ipcRenderer.invoke(IPC_REQUEST_ABORT, id)
 }
 
 if (process.contextIsolated) {

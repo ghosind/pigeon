@@ -2,18 +2,18 @@ import React from 'react'
 import { Box, Tabs, Tab } from '@mui/material'
 import KeyValueEditor from './KeyValueEditor'
 import BodyEditor from './BodyEditor'
-import { HttpRequest } from '@renderer/types/request'
+import { HTTPRequest } from '@shared/types/request'
 import { Url } from '@shared/utils/url'
 
 type RequestAreaProps = {
-  request: HttpRequest
-  onChange: (request: HttpRequest) => void
+  request: HTTPRequest
+  onChange: (request: HTTPRequest) => void
 }
 
 export default function RequestArea({ request, onChange }: RequestAreaProps): React.ReactElement {
   const [tab, setTab] = React.useState(0)
 
-  const onParamsChange = (params: HttpRequest['params']): void => {
+  const onParamsChange = (params: HTTPRequest['params']): void => {
     const { url } = request
     const urlObj = new Url(url || '')
     const search = new URLSearchParams()
@@ -31,11 +31,11 @@ export default function RequestArea({ request, onChange }: RequestAreaProps): Re
     })
   }
 
-  const onHeadersChange = (headers: HttpRequest['headers']): void => {
+  const onHeadersChange = (headers: HTTPRequest['headers']): void => {
     onChange({ ...request, headers })
   }
 
-  const onBodyChange = (body: HttpRequest['body']): void => {
+  const onBodyChange = (body: HTTPRequest['body']): void => {
     onChange({ ...request, body })
   }
 
@@ -54,7 +54,7 @@ export default function RequestArea({ request, onChange }: RequestAreaProps): Re
       <Box sx={{ flex: 1, overflow: 'auto', p: 1, minHeight: 0 }}>
         {tab === 0 && <KeyValueEditor rows={request.params || []} onChange={onParamsChange} />}
         {tab === 1 && <KeyValueEditor rows={request.headers || []} onChange={onHeadersChange} />}
-        {tab === 2 && <BodyEditor body={request.body || ''} onChange={onBodyChange} />}
+        {tab === 2 && <BodyEditor body={request.body} onChange={onBodyChange} />}
       </Box>
     </Box>
   )

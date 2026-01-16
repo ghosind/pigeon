@@ -2,12 +2,13 @@ import { useCallback, useEffect, useState } from 'react'
 import { Box, TextField, Select, MenuItem, Button, FormControl } from '@mui/material'
 import SendIcon from '@mui/icons-material/Send'
 import CancelIcon from '@mui/icons-material/Cancel'
-import { HttpMethod, HttpRequest, KeyValuePair } from '@renderer/types/request'
+import { KeyValuePair } from '@shared/types/kv'
+import { HTTPMethod, HTTPRequest } from '@shared/types/request'
 import { Url } from '@shared/utils/url'
 
 type AddressBarProps = {
-  request: HttpRequest
-  onChange: (request: HttpRequest) => void
+  request: HTTPRequest
+  onChange: (request: HTTPRequest) => void
   onSend: () => void
   isLoading: boolean
   onCancel: () => void
@@ -22,7 +23,7 @@ export default function AddressBar({
 }: AddressBarProps): React.ReactElement {
   const [isErr, setIsErr] = useState(false)
 
-  const handleChange = (value: Partial<HttpRequest>): void => {
+  const handleChange = (value: Partial<HTTPRequest>): void => {
     onChange({ ...request, ...value })
   }
 
@@ -71,10 +72,10 @@ export default function AddressBar({
       <FormControl size="small" sx={{ minWidth: 110 }}>
         <Select
           value={request.method}
-          onChange={(e) => handleChange({ method: e.target.value as HttpMethod })}
+          onChange={(e) => handleChange({ method: e.target.value as HTTPMethod })}
           disabled={isLoading}
         >
-          {Object.values(HttpMethod).map((m) => (
+          {Object.values(HTTPMethod).map((m) => (
             <MenuItem key={m} value={m}>
               {m}
             </MenuItem>

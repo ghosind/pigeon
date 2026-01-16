@@ -1,8 +1,9 @@
 import { ElectronAPI } from '@electron-toolkit/preload'
+import { HTTPRequest, HTTPResponse } from '@shared/types'
 
 interface RequestAPI {
-  sendRequest: (req: unknown) => Promise<unknown>
-  abortRequest: (id: unknown) => Promise<unknown>
+  sendRequest: (id: string, req: HTTPRequest) => Promise<HTTPResponse>
+  abortRequest: (id: string) => Promise<unknown>
 }
 
 declare global {

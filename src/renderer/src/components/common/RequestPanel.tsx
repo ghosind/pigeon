@@ -4,13 +4,13 @@ import AddressBar from '@renderer/components/request/AddressBar'
 import RequestArea from '@renderer/components/request/RequestArea'
 import ResponseArea from '@renderer/components/response/ResponseArea'
 import Splitter from '@renderer/components/common/Splitter'
-import { HttpMethod, HttpRequest } from '../../types/request'
-import { Request, Response } from '@shared/types'
-import { HTTPResponse } from '@renderer/types/response'
+import { HTTPMethod, HTTPRequest } from '@shared/types/request'
+import { HTTPResponse } from '@shared/types/response'
 
 export default function RequestPanel(): React.JSX.Element {
-  const [request, setRequest] = useState<HttpRequest>({
-    method: HttpMethod.GET
+  const [request, setRequest] = useState<HTTPRequest>({
+    method: HTTPMethod.GET,
+    url: '',
   })
   const [response, setResponse] = useState<HTTPResponse | null>(null)
   const [isLoading, setIsLoading] = useState<boolean>(false)
@@ -34,49 +34,14 @@ export default function RequestPanel(): React.JSX.Element {
   const doSend = async (): Promise<void> => {
     try {
       setIsLoading(true)
-      let url = request?.url || ''
-      if (!/^http(s)?:\/\//.test(url)) {
-        url = `http://${url}`
-      }
-      const urlObj = new URL(url)
+      const id = Date.now().toString()
+      setCurrentReqId(id)
+      const response = await window.api.sendRequest(id, request)
 
-      const headers: Record<string, string> = {}
-      request?.headers?.forEach((row) => {
-        if (row.key && row.enabled) {
-          headers[row.key] = row.value || ''
-        }
-      })
-      const req: Request = {
-        id: Date.now().toString(),
-        url: urlObj.toString(),
-        method: request?.method as string,
-        headers: headers
-      }
-      if (request?.body?.length && request?.method?.toUpperCase() !== 'GET') {
-        req.body = request.body
-      }
-
-      setCurrentReqId(req.id)
-      const response = (await window.api.sendRequest(req)) as Response
-
-      const resHeaders: Record<string, string> = {}
-      Object.entries(response.headers).forEach(([key, value]) => {
-        resHeaders[key] = Array.isArray(value) ? value.join('; ') : value
-      })
-
-      setResponse({
-        status: response.status,
-        statusText: response.statusText,
-        headers: resHeaders,
-        body: response.body,
-        duration: response.duration
-      })
+      setResponse(response)
     } catch (err) {
       setResponse({
-        status: 0,
         statusText: String(err),
-        headers: {},
-        body: ''
       })
     } finally {
       setIsLoading(false)

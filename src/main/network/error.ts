@@ -1,4 +1,4 @@
-import { RequestError } from '@shared/types'
+import { HTTPRequestError } from '@shared/types'
 
 export type RequestErrorCode =
   | 'ABORTED'
@@ -13,7 +13,7 @@ function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null
 }
 
-export function normalizeError(err: unknown): RequestError {
+export function normalizeError(err: unknown): HTTPRequestError {
   if (isObject(err) && err['name'] === 'AbortError') {
     return {
       code: 'ABORTED',

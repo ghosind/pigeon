@@ -11,7 +11,7 @@ import {
   InputBase
 } from '@mui/material'
 import DeleteIcon from '@mui/icons-material/Delete'
-import { KeyValuePair } from '@renderer/types/request'
+import { KeyValuePair } from '@shared/types/kv'
 
 type KeyValueEditorProps = {
   rows: KeyValuePair[]
