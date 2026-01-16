@@ -3,7 +3,7 @@ import { Box } from '@mui/material'
 import ResponseHeader from './ResponseHeader'
 import BodyViewer from './BodyViewer'
 import HeadersViewer from './HeadersViewer'
-import { HTTPResponse } from '@renderer/types/response'
+import { HTTPResponse } from '@shared/types/response'
 
 type ResponseAreaProps = {
   response: HTTPResponse | null

@@ -1,5 +1,5 @@
 import { Box, Typography, Chip, FormControl, Select, MenuItem } from '@mui/material'
-import { HTTPResponse } from '@renderer/types/response'
+import { HTTPResponse } from '@shared/types/response'
 import { formatSize } from '@shared/utils/unit'
 
 type ResponseHeaderProps = {
@@ -40,8 +40,8 @@ export default function ResponseHeader({
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <Typography variant="body2">Status</Typography>
           <Chip
-            label={`${status ?? ''} ${statusText ?? ''}`}
-            color={status && status >= 400 ? 'error' : 'success'}
+            label={`${(status && `${status} `) ?? ''} ${statusText ?? ''}`}
+            color={!status || status >= 400 ? 'error' : 'success'}
             size="small"
           />
         </Box>

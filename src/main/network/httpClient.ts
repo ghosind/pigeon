@@ -119,21 +119,35 @@ export async function sendHttpRequest(
       signal
     })
 
+    let size: number | undefined = undefined
+    const body = await res.body.text()
+    if (res.headers['content-length']) {
+      if (Array.isArray(res.headers['content-length'])) {
+        size = parseInt(res.headers['content-length'][0], 10)
+      } else {
+        size = parseInt(res.headers['content-length'] as string, 10)
+      }
+    } else {
+      size = body.length
+    }
+
     return {
       status: res.statusCode,
       statusText: STATUS_CODES[res.statusCode] || '',
       headers: res.headers as Record<string, string>,
-      body: await res.body.text(),
+      body,
+      size,
       duration: Date.now() - start
     }
   } catch (err) {
     console.log('Request error:', err)
+    const reqErr = normalizeError(err)
     return {
-      status: 0,
+      statusText: reqErr.message,
       headers: {},
       body: '',
       duration: Date.now() - start,
-      error: normalizeError(err)
+      error: reqErr
     }
   }
 }

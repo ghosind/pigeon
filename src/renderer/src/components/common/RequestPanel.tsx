@@ -10,7 +10,7 @@ import { HTTPResponse } from '@shared/types/response'
 export default function RequestPanel(): React.JSX.Element {
   const [request, setRequest] = useState<HTTPRequest>({
     method: HTTPMethod.GET,
-    url: '',
+    url: ''
   })
   const [response, setResponse] = useState<HTTPResponse | null>(null)
   const [isLoading, setIsLoading] = useState<boolean>(false)
@@ -37,11 +37,12 @@ export default function RequestPanel(): React.JSX.Element {
       const id = Date.now().toString()
       setCurrentReqId(id)
       const response = await window.api.sendRequest(id, request)
+      console.log('Response received:', response)
 
       setResponse(response)
     } catch (err) {
       setResponse({
-        statusText: String(err),
+        statusText: String(err)
       })
     } finally {
       setIsLoading(false)
