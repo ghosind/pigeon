@@ -15,7 +15,7 @@ export default function RawControls({
   setLanguage
 }: RawControlsProps): React.ReactElement {
   const prettify = (src = body): string => {
-    if (!src || language !== 'JSON') {
+    if (!src || language !== 'json') {
       return src
     }
 
@@ -41,10 +41,9 @@ export default function RawControls({
         value={language}
         onChange={handleLanguageChange}
       >
-        <MenuItem value="JSON">JSON</MenuItem>
-        <MenuItem value="Text">Text</MenuItem>
-        <MenuItem value="XML">XML</MenuItem>
-        <MenuItem value="JavaScript">JavaScript</MenuItem>
+        <MenuItem value="json">JSON</MenuItem>
+        <MenuItem value="xml">XML</MenuItem>
+        <MenuItem value="text">Text</MenuItem>
       </Select>
 
       <Button size="small" onClick={() => onChange(prettify())}>

@@ -1,7 +1,7 @@
 import React from 'react'
 import { Box, Typography } from '@mui/material'
 import ModeSelect from './ModeSelect'
-import RawEditor from './RawEditor'
+import RawEditor from '@renderer/components/common/RawEditor'
 import RawControls from './RawControls'
 
 type BodyEditorProps = {
@@ -11,7 +11,7 @@ type BodyEditorProps = {
 
 export default function BodyEditor({ body, onChange }: BodyEditorProps): React.ReactElement {
   const [mode, setMode] = React.useState<string>('raw')
-  const [language, setLanguage] = React.useState<string>('JSON')
+  const [language, setLanguage] = React.useState<string>('json')
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
@@ -31,7 +31,7 @@ export default function BodyEditor({ body, onChange }: BodyEditorProps): React.R
       </Box>
 
       <Box sx={{ flex: 1, p: 1, minHeight: 0 }}>
-        {mode === 'raw' && <RawEditor body={body} onChange={onChange} />}
+        {mode === 'raw' && <RawEditor body={body} onChange={onChange} language={language} />}
 
         {mode === 'none' && (
           <Box sx={{ p: 2 }}>

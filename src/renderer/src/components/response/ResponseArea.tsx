@@ -16,7 +16,7 @@ export default function ResponseArea({ response }: ResponseAreaProps): React.Rea
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', width: '100%' }}>
       <ResponseHeader response={response} panel={panel} setPanel={setPanel} />
 
-      <Box sx={{ flex: 1, overflow: 'auto', mt: 1 }}>
+      <Box sx={{ flex: 1, p: 1, minHeight: 0 }}>
         {panel === 'body' && <BodyViewer response={response} />}
         {panel === 'headers' && <HeadersViewer response={response} />}
       </Box>
