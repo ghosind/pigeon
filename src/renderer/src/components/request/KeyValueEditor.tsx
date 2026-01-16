@@ -1,3 +1,4 @@
+import React, { useRef, useState } from 'react'
 import {
   Box,
   IconButton,
@@ -21,6 +22,54 @@ export default function KeyValueEditor({
   rows,
   onChange
 }: KeyValueEditorProps): React.ReactElement {
+  const dragIndex = useRef<number | null>(null)
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null)
+
+  const handleDragStart = (e: React.DragEvent, idx: number): void => {
+    dragIndex.current = idx
+    e.dataTransfer.effectAllowed = 'move'
+    try {
+      e.dataTransfer.setData('text/plain', String(idx))
+    } catch (err) {
+      console.error('Drag start setData failed:', err)
+    }
+  }
+
+  const handleDragOver = (e: React.DragEvent, idx: number): void => {
+    e.preventDefault()
+    if (dragIndex.current === null) return
+    if (dragOverIndex !== idx) setDragOverIndex(idx)
+    e.dataTransfer.dropEffect = 'move'
+  }
+
+  const handleDrop = (e: React.DragEvent, idx: number): void => {
+    e.preventDefault()
+    const from = dragIndex.current
+    const to = idx
+    if (from === null || from === undefined) return
+
+    if (to === rows.length) {
+      const updated = [...rows]
+      const [moved] = updated.splice(from, 1)
+      updated.push(moved)
+      onChange(updated)
+    } else if (from !== to) {
+      const updated = [...rows]
+      const [moved] = updated.splice(from, 1)
+      const insertIndex = to > from ? to - 1 : to
+      updated.splice(insertIndex, 0, moved)
+      onChange(updated)
+    }
+
+    dragIndex.current = null
+    setDragOverIndex(null)
+  }
+
+  const handleDragEnd = (): void => {
+    dragIndex.current = null
+    setDragOverIndex(null)
+  }
+
   const updateRow = (idx: number, patch: Partial<KeyValuePair>): void => {
     const isPlaceholder = idx === rows.length
 
@@ -60,7 +109,18 @@ export default function KeyValueEditor({
           {[...rows, { key: '', value: '', enabled: undefined }].map((row, index) => {
             const isPlaceholder = index === rows.length
             return (
-              <TableRow key={index}>
+              <TableRow
+                key={index}
+                draggable={!isPlaceholder}
+                onDragStart={(e) => (isPlaceholder ? undefined : handleDragStart(e, index))}
+                onDragOver={(e) => handleDragOver(e, index)}
+                onDrop={(e) => handleDrop(e, index)}
+                onDragEnd={handleDragEnd}
+                sx={{
+                  bgcolor: dragOverIndex === index ? 'action.selected' : undefined,
+                  cursor: isPlaceholder ? 'default' : 'grab'
+                }}
+              >
                 <TableCell sx={{ width: 80 }}>
                   <Checkbox
                     checked={row.enabled ?? true}

@@ -8,26 +8,24 @@ type BodyViewerProps = {
 }
 
 export default function BodyViewer({ response }: BodyViewerProps): React.ReactElement {
-  const contentType = response?.headers?.['content-type'] || ''
-  const language = useMemo(() => {
-    if (contentType.includes('json')) {
-      return 'json'
-    } else if (contentType.includes('html')) {
-      return 'html'
-    }
+  const [body, language] = useMemo(() => {
+    let lang = 'text'
+    let b = response?.body || ''
 
-    return 'text'
-  }, [contentType])
-  const body = useMemo(() => {
-    if (contentType.includes('json') && response?.body) {
+    const contentType = response?.headers?.['content-type'] || ''
+    if (contentType.includes('json')) {
+      lang = 'json'
       try {
-        return JSON.stringify(JSON.parse(response.body), null, 2)
+        b = JSON.stringify(JSON.parse(b), null, 2)
       } catch (e) {
         console.error('Failed to parse JSON body:', e)
       }
+    } else if (contentType.includes('html')) {
+      lang = 'html'
     }
-    return response?.body || ''
-  }, [response, contentType])
+
+    return [b, lang]
+  }, [response])
 
   return (
     <Box sx={{ height: '100%', width: '100%' }}>
