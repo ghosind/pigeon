@@ -1,4 +1,4 @@
-const ProtocolPattern = /^[a-zA-Z][a-zA-Z\d+\-.]*:\/\//
+const ProtocolPattern = /^([a-zA-Z][a-zA-Z\d+\-.]*):\/\//
 
 export class Url {
   readonly raw: string
