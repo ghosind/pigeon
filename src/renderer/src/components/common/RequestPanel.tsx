@@ -84,7 +84,14 @@ export default function RequestPanel(): React.JSX.Element {
 
         <Box
           id="req-resp-container"
-          sx={{ display: 'flex', flex: 1, gap: 1, alignItems: 'stretch', minHeight: 0, minWidth: 0 }}
+          sx={{
+            display: 'flex',
+            flex: 1,
+            gap: 1,
+            alignItems: 'stretch',
+            minHeight: 0,
+            minWidth: 0
+          }}
         >
           <Box sx={{ width: `${centerPct}%`, display: 'flex', minWidth: 0 }}>
             <Paper sx={{ p: 1, flex: 1, display: 'flex', minHeight: 0, minWidth: 0 }}>
