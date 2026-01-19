@@ -63,13 +63,15 @@ export default function RequestPanel(): React.JSX.Element {
       sx={{
         height: '100%',
         display: 'flex',
+        flex: 1,
         flexDirection: 'row',
         p: 1,
         gap: 1,
-        bgcolor: 'background.default'
+        bgcolor: 'background.default',
+        minWidth: 0
       }}
     >
-      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, minWidth: 0 }}>
         <Paper elevation={1} sx={{ p: 1, mb: 1, flex: 'none' }}>
           <AddressBar
             request={request}
@@ -82,18 +84,18 @@ export default function RequestPanel(): React.JSX.Element {
 
         <Box
           id="req-resp-container"
-          sx={{ display: 'flex', flex: 1, gap: 1, alignItems: 'stretch', minHeight: 0 }}
+          sx={{ display: 'flex', flex: 1, gap: 1, alignItems: 'stretch', minHeight: 0, minWidth: 0 }}
         >
-          <Box sx={{ width: `${centerPct}%`, display: 'flex' }}>
-            <Paper sx={{ p: 1, flex: 1, display: 'flex', minHeight: 0 }}>
+          <Box sx={{ width: `${centerPct}%`, display: 'flex', minWidth: 0 }}>
+            <Paper sx={{ p: 1, flex: 1, display: 'flex', minHeight: 0, minWidth: 0 }}>
               <RequestArea request={request} onChange={setRequest} />
             </Paper>
           </Box>
 
           <Splitter onDrag={onDragCenter} />
 
-          <Box sx={{ width: `${100 - centerPct}%`, display: 'flex' }}>
-            <Paper sx={{ p: 1, flex: 1, display: 'flex', minHeight: 0 }}>
+          <Box sx={{ width: `${100 - centerPct}%`, display: 'flex', minWidth: 0 }}>
+            <Paper sx={{ p: 1, flex: 1, display: 'flex', minHeight: 0, minWidth: 0 }}>
               <ResponseArea response={response} />
             </Paper>
           </Box>

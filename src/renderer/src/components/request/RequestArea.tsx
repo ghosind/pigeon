@@ -40,7 +40,7 @@ export default function RequestArea({ request, onChange }: RequestAreaProps): Re
   }
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%' }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%', minWidth: 0, flex: 1 }}>
       <Tabs
         value={tab}
         onChange={(_, v) => setTab(v)}
