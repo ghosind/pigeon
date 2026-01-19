@@ -1,5 +1,5 @@
 appId: com.ghosind.pigeon
-productName: pigeon
+productName: Pigeon
 directories:
   buildResources: build
 publish:
@@ -15,15 +15,18 @@ files:
 asarUnpack:
   - resources/**
 win:
-  executableName: pigeon
+  executableName: Pigeon
 nsis:
   artifactName: ${name}-${version}-setup.${ext}
   shortcutName: ${productName}
   uninstallDisplayName: ${productName}
   createDesktopShortcut: always
 mac:
+  target:
+    - dmg
   identity: null
   hardenedRuntime: true
+  gatekeeperAssess: false
   entitlements: build/entitlements.mac.plist
   entitlementsInherit: build/entitlements.mac.plist
   icon: build/icon.icns
