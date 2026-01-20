@@ -34,6 +34,25 @@ export default function RequestPage(): React.JSX.Element {
     setActiveId(id)
   }
 
+  const handleRename = (id: string, title: string): void => {
+    setTabs((ts) => ts.map((t) => (t.id === id ? { ...t, title } : t)))
+  }
+
+  const handleReorder = (fromId: string, toId: string): void => {
+    setTabs((prev) => {
+      const fromIdx = prev.findIndex((t) => t.id === fromId)
+      if (fromIdx === -1) {
+        return prev
+      }
+      const item = prev[fromIdx]
+      const without = prev.filter((t) => t.id !== fromId)
+      const targetIdx = without.findIndex((t) => t.id === toId)
+      const insertAt = targetIdx === -1 ? without.length : targetIdx
+      const next = [...without.slice(0, insertAt), item, ...without.slice(insertAt)]
+      return next
+    })
+  }
+
   const closeTab = (id: string): void => {
     setTabs((t) => t.filter((tab) => tab.id !== id))
     if (activeId === id) {
@@ -77,6 +96,8 @@ export default function RequestPage(): React.JSX.Element {
         onSelect={selectTab}
         onClose={closeTab}
         onAdd={addTab}
+        onRename={handleRename}
+        onReorder={handleReorder}
       />
       <Box sx={{ flex: 1, minHeight: 0 }}>
         <RequestPanel
