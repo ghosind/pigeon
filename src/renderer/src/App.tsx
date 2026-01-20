@@ -1,15 +1,17 @@
 import React from 'react'
-import { ThemeProvider } from '@mui/material/styles'
 import CssBaseline from '@mui/material/CssBaseline'
-import RequestPage from './pages/RequestPage'
-import { lightTheme } from './themes'
+import Layout from '@renderer/components/common/Layout'
+import AppThemeProvider from '@renderer/contexts/ThemeContext'
+import RequestPage from '@renderer/pages/RequestPage'
 
 function App(): React.JSX.Element {
   return (
-    <ThemeProvider theme={lightTheme}>
+    <AppThemeProvider>
       <CssBaseline />
-      <RequestPage />
-    </ThemeProvider>
+      <Layout>
+        <RequestPage />
+      </Layout>
+    </AppThemeProvider>
   )
 }
 
