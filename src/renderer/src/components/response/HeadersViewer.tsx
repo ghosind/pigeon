@@ -8,12 +8,14 @@ import {
   TableRow
 } from '@mui/material'
 import { HTTPResponse } from '@shared/types/response'
+import { useI18n } from '../../contexts/useI18n'
 
 type HeadersViewerProps = {
   response?: HTTPResponse
 }
 
 export default function HeadersViewer({ response }: HeadersViewerProps): React.ReactElement {
+  const { t } = useI18n()
   const headers = response?.headers
     ? Object.entries(response.headers as Record<string, string>)
     : []
@@ -23,8 +25,8 @@ export default function HeadersViewer({ response }: HeadersViewerProps): React.R
       <Table size="small">
         <TableHead>
           <TableRow>
-            <TableCell>Name</TableCell>
-            <TableCell>Value</TableCell>
+            <TableCell>{t('response.headersTable.name')}</TableCell>
+            <TableCell>{t('response.headersTable.value')}</TableCell>
           </TableRow>
         </TableHead>
         <TableBody>

@@ -1,5 +1,6 @@
 import React from 'react'
 import { Box, Typography } from '@mui/material'
+import { useI18n } from '../../contexts/useI18n'
 import ModeSelect from './ModeSelect'
 import RawEditor from '@renderer/components/common/RawEditor'
 import RawControls from './RawControls'
@@ -20,6 +21,7 @@ const ContentTypeMap: Record<HTTPBodyMode, HTTPContentType> = {
 }
 
 export default function BodyEditor({ body, onChange }: BodyEditorProps): React.ReactElement {
+  const { t } = useI18n()
   const [mode, setMode] = React.useState<HTTPBodyMode>(body?.mode || 'raw')
   const [language, setLanguage] = React.useState<HTTPContentType>('json')
   const [formRows, setFormRows] = React.useState<KeyValuePair[]>(body?.form ?? [])
@@ -88,7 +90,7 @@ export default function BodyEditor({ body, onChange }: BodyEditorProps): React.R
         {mode === 'none' && (
           <Box sx={{ p: 2 }}>
             <Typography variant="body2" color="text.secondary">
-              No request body for this request.
+              {t('request.body.noneNotice')}
             </Typography>
           </Box>
         )}

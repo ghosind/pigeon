@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { Box, TextField, Select, MenuItem, Button, FormControl } from '@mui/material'
 import SendIcon from '@mui/icons-material/Send'
 import CancelIcon from '@mui/icons-material/Cancel'
+import { useI18n } from '../../contexts/useI18n'
 import { KeyValuePair } from '@shared/types/kv'
 import { HTTPMethod, HTTPRequest } from '@shared/types/request'
 import { Url } from '@shared/utils/url'
@@ -21,6 +22,7 @@ export default function AddressBar({
   isLoading,
   onCancel
 }: AddressBarProps): React.ReactElement {
+  const { t } = useI18n()
   const [isErr, setIsErr] = useState(false)
 
   const handleChange = (value: Partial<HTTPRequest>): void => {
@@ -101,7 +103,7 @@ export default function AddressBar({
           }
         }}
         disabled={isLoading}
-        placeholder="Enter URL or paste text"
+        placeholder={t('addressbar.placeholder')}
       />
 
       {isLoading ? (
@@ -111,7 +113,7 @@ export default function AddressBar({
           endIcon={<CancelIcon />}
           onClick={() => onCancel()}
         >
-          Cancel
+          {t('action.cancel')}
         </Button>
       ) : (
         <Button
@@ -120,7 +122,7 @@ export default function AddressBar({
           endIcon={<SendIcon />}
           onClick={() => handleSend()}
         >
-          Send
+          {t('action.send')}
         </Button>
       )}
     </Box>

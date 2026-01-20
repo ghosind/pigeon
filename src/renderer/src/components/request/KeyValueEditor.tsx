@@ -12,6 +12,7 @@ import {
 } from '@mui/material'
 import DeleteIcon from '@mui/icons-material/Delete'
 import { KeyValuePair } from '@shared/types/kv'
+import { useI18n } from '../../contexts/useI18n'
 
 type KeyValueEditorProps = {
   rows: KeyValuePair[]
@@ -22,6 +23,7 @@ export default function KeyValueEditor({
   rows,
   onChange
 }: KeyValueEditorProps): React.ReactElement {
+  const { t } = useI18n()
   const dragIndex = useRef<number | null>(null)
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null)
 
@@ -100,8 +102,8 @@ export default function KeyValueEditor({
         <TableHead>
           <TableRow sx={{ height: 36 }}>
             <TableCell sx={{ width: 80 }}></TableCell>
-            <TableCell>Key</TableCell>
-            <TableCell>Value</TableCell>
+            <TableCell>{t('kv.key')}</TableCell>
+            <TableCell>{t('kv.value')}</TableCell>
             <TableCell sx={{ width: 60 }}></TableCell>
           </TableRow>
         </TableHead>
@@ -132,7 +134,7 @@ export default function KeyValueEditor({
                   <InputBase
                     size="small"
                     fullWidth
-                    placeholder="Key"
+                    placeholder={t('kv.key')}
                     value={isPlaceholder ? '' : (row.key ?? '')}
                     onChange={(e) => updateRow(index, { key: e.target.value })}
                   />
@@ -141,7 +143,7 @@ export default function KeyValueEditor({
                   <InputBase
                     size="small"
                     fullWidth
-                    placeholder="Value"
+                    placeholder={t('kv.value')}
                     value={isPlaceholder ? '' : (row.value ?? '')}
                     onChange={(e) => updateRow(index, { value: e.target.value })}
                   />

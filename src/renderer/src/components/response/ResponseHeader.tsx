@@ -1,6 +1,7 @@
 import { Box, Typography, Chip, FormControl, Select, MenuItem } from '@mui/material'
 import { HTTPResponse } from '@shared/types/response'
 import { formatSize } from '@shared/utils/unit'
+import { useI18n } from '../../contexts/useI18n'
 
 type ResponseHeaderProps = {
   response?: HTTPResponse
@@ -13,10 +14,11 @@ export default function ResponseHeader({
   panel,
   setPanel
 }: ResponseHeaderProps): React.ReactElement | null {
+  const { t } = useI18n()
   if (!response) {
     return (
       <Box sx={{ mb: 1 }}>
-        <Typography>Response</Typography>
+        <Typography>{t('response.header.title')}</Typography>
       </Box>
     )
   }
@@ -32,13 +34,13 @@ export default function ResponseHeader({
       <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', mb: 1, flexWrap: 'wrap' }}>
         <FormControl size="small" sx={{ ml: 2, minWidth: 100 }} variant="standard">
           <Select value={panel} onChange={(e) => setPanel(e.target.value as string)}>
-            <MenuItem value="body">Body</MenuItem>
-            <MenuItem value="headers">Headers</MenuItem>
+            <MenuItem value="body">{t('response.tab.body')}</MenuItem>
+            <MenuItem value="headers">{t('response.tab.headers')}</MenuItem>
           </Select>
         </FormControl>
 
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Typography variant="body2">Status</Typography>
+          <Typography variant="body2">{t('response.header.status')}</Typography>
           <Chip
             label={`${(status && `${status} `) ?? ''} ${statusText ?? ''}`}
             color={!status || status >= 400 ? 'error' : 'success'}
@@ -47,12 +49,14 @@ export default function ResponseHeader({
         </Box>
 
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Typography variant="body2">Time</Typography>
-          <Typography variant="body2">{timeMs ? `${timeMs} ms` : '—'}</Typography>
+          <Typography variant="body2">{t('response.header.time')}</Typography>
+          <Typography variant="body2">
+            {timeMs ? `${timeMs} ms` : t('response.header.noValue')}
+          </Typography>
         </Box>
 
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Typography variant="body2">Size</Typography>
+          <Typography variant="body2">{t('response.header.size')}</Typography>
           <Typography variant="body2">{formatSize(size)}</Typography>
         </Box>
       </Box>

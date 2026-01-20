@@ -8,6 +8,7 @@ import ListItemButton from '@mui/material/ListItemButton'
 import ListItemText from '@mui/material/ListItemText'
 import SettingsForm from './SettingsForm'
 import { useSettingsSchema } from '@renderer/settings/schema'
+import { useI18n } from '../../contexts/useI18n'
 
 interface SettingsModalProps {
   open: boolean
@@ -15,11 +16,12 @@ interface SettingsModalProps {
 }
 
 export function SettingsModal({ open, onClose }: SettingsModalProps): React.ReactElement {
+  const { t } = useI18n()
   const schema = useSettingsSchema()
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="md">
-      <DialogTitle>Settings</DialogTitle>
+      <DialogTitle>{t('settings.title')}</DialogTitle>
       <DialogContent>
         <Box sx={{ display: 'flex', gap: 2, height: 360 }}>
           <Box
@@ -27,7 +29,7 @@ export function SettingsModal({ open, onClose }: SettingsModalProps): React.Reac
           >
             <List>
               <ListItemButton selected>
-                <ListItemText primary="General" />
+                <ListItemText primary={t('settings.menu.general')} />
               </ListItemButton>
             </List>
           </Box>

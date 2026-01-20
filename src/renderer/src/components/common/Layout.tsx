@@ -4,18 +4,20 @@ import Toolbar from '@mui/material/Toolbar'
 import Box from '@mui/material/Box'
 import IconButton from '@mui/material/IconButton'
 import Tooltip from '@mui/material/Tooltip'
+import { useI18n } from '../../contexts/useI18n'
 import SettingsIcon from '@mui/icons-material/Settings'
 import SettingsModal from './SettingsModal'
 
 const Layout: React.FC<React.PropsWithChildren> = ({ children }) => {
   const [open, setOpen] = useState(false)
+  const { t } = useI18n()
 
   return (
     <Box sx={{ minHeight: '100vh' }}>
       <AppBar position="fixed" color="default" elevation={1} sx={{ height: 48 }}>
         <Toolbar variant="dense" sx={{ minHeight: 48, height: 48 }}>
           <Box sx={{ flex: 1 }} />
-          <Tooltip title="Settings">
+          <Tooltip title={t('layout.settings.tooltip')}>
             <IconButton color="inherit" size="small" onClick={() => setOpen(true)}>
               <SettingsIcon fontSize="small" />
             </IconButton>

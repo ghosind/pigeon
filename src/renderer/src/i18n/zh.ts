@@ -1,0 +1,50 @@
+const zh = {
+  'app.title': '鸽子',
+  'settings.title': '设置',
+  'settings.menu.general': '常规',
+  'settings.theme.title': '主题',
+  'settings.theme.description': '选择应用的显示主题',
+  'theme.option.light': '浅色',
+  'theme.option.dark': '深色',
+  'theme.option.system': '跟随系统',
+  'settings.language.title': '语言',
+  'language.option.en': 'English',
+  'language.option.zh': '简体中文',
+  'layout.settings.tooltip': '设置',
+
+  'default.tab.title': '未命名请求',
+  'tabbar.addTab': '新建标签页',
+
+  'response.header.title': '响应',
+  'response.tab.body': '正文',
+  'response.tab.headers': '头部',
+  'response.header.status': '状态',
+  'response.header.time': '耗时',
+  'response.header.timeValue': '{0} 毫秒',
+  'response.header.noValue': '—',
+  'response.header.size': '大小',
+  'response.headersTable.name': '名称',
+  'response.headersTable.value': '值',
+
+  'request.mode.none': '无',
+  'request.mode.raw': '原始',
+  'request.mode.form': '表单数据',
+  'request.mode.urlencoded': 'x-www-form-urlencoded',
+  'request.raw.json': 'JSON',
+  'request.raw.xml': 'XML',
+  'request.raw.text': '文本',
+  'request.raw.prettify': '美化',
+  'request.body.noneNotice': '此请求没有请求体。',
+  'request.tab.params': '参数',
+  'request.tab.headers': '头部',
+  'request.tab.body': '正文',
+
+  'action.cancel': '取消',
+  'action.send': '发送',
+  'addressbar.placeholder': '输入 URL 或粘贴文本',
+
+  'kv.key': '键',
+  'kv.value': '值'
+}
+
+export default zh

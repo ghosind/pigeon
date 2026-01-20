@@ -4,6 +4,7 @@ import { Box } from '@mui/material'
 import TabBar from '@renderer/components/common/TabBar'
 import RequestPanel from '@renderer/components/common/RequestPanel'
 import { HTTPMethod, HTTPRequest, HTTPResponse } from '@shared/types'
+import { useI18n } from '@renderer/contexts/useI18n'
 
 type Tab = {
   id: string
@@ -13,8 +14,9 @@ type Tab = {
 }
 
 export default function RequestPage(): React.JSX.Element {
+  const { t } = useI18n()
   const [tabs, setTabs] = useState<Tab[]>(() => [
-    { id: uuid.v4(), title: 'Untitled Request', request: { method: HTTPMethod.GET, url: '' } }
+    { id: uuid.v4(), title: t('default.tab.title'), request: { method: HTTPMethod.GET, url: '' } }
   ])
   const [activeId, setActiveId] = useState<string>(tabs[0].id)
   const request = tabs.find((t) => t.id === activeId)?.request || {
@@ -27,7 +29,7 @@ export default function RequestPage(): React.JSX.Element {
     const id = uuid.v4()
     const newTab: Tab = {
       id,
-      title: 'Untitled Request',
+      title: t('default.tab.title'),
       request: { method: HTTPMethod.GET, url: '' }
     }
     setTabs((t) => [...t, newTab])

@@ -3,6 +3,7 @@ import { Box, IconButton, Tooltip, Tabs, Tab, TextField, Menu, MenuItem } from '
 import CloseIcon from '@mui/icons-material/Close'
 import AddIcon from '@mui/icons-material/Add'
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown'
+import { useI18n } from '@renderer/contexts/useI18n'
 
 type TabItem = {
   id: string
@@ -28,6 +29,7 @@ export default function TabBar({
   onRename,
   onReorder
 }: TabBarProps): React.JSX.Element {
+  const { t } = useI18n()
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editTitle, setEditTitle] = useState<string>('')
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null)
@@ -142,7 +144,7 @@ export default function TabBar({
       </Tabs>
 
       <Box sx={{ flex: 1 }} />
-      <Tooltip title="New Tab">
+      <Tooltip title={t('tabbar.addTab')}>
         <IconButton size="small" onClick={onAdd} sx={{ mr: 1 }}>
           <AddIcon />
         </IconButton>

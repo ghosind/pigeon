@@ -1,5 +1,6 @@
 import { Box, Button, Select, MenuItem } from '@mui/material'
 import { SelectChangeEvent } from '@mui/material/Select'
+import { useI18n } from '../../contexts/useI18n'
 import { HTTPContentType } from '@shared/types'
 
 type RawControlsProps = {
@@ -15,6 +16,7 @@ export default function RawControls({
   language,
   setLanguage
 }: RawControlsProps): React.ReactElement {
+  const { t } = useI18n()
   const prettify = (src = body): string => {
     if (!src || language !== 'json') {
       return src
@@ -42,13 +44,13 @@ export default function RawControls({
         value={language}
         onChange={handleLanguageChange}
       >
-        <MenuItem value="json">JSON</MenuItem>
-        <MenuItem value="xml">XML</MenuItem>
-        <MenuItem value="text">Text</MenuItem>
+        <MenuItem value="json">{t('request.raw.json')}</MenuItem>
+        <MenuItem value="xml">{t('request.raw.xml')}</MenuItem>
+        <MenuItem value="text">{t('request.raw.text')}</MenuItem>
       </Select>
 
       <Button size="small" onClick={() => onChange(prettify())}>
-        Prettify
+        {t('request.raw.prettify')}
       </Button>
     </Box>
   )

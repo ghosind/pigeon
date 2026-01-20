@@ -1,5 +1,6 @@
 import React from 'react'
 import { Box, Tabs, Tab } from '@mui/material'
+import { useI18n } from '../../contexts/useI18n'
 import KeyValueEditor from './KeyValueEditor'
 import BodyEditor from './BodyEditor'
 import { HTTPRequest } from '@shared/types/request'
@@ -12,6 +13,7 @@ type RequestAreaProps = {
 
 export default function RequestArea({ request, onChange }: RequestAreaProps): React.ReactElement {
   const [tab, setTab] = React.useState(0)
+  const { t } = useI18n()
 
   const onParamsChange = (params: HTTPRequest['params']): void => {
     const { url } = request
@@ -55,9 +57,9 @@ export default function RequestArea({ request, onChange }: RequestAreaProps): Re
         onChange={(_, v) => setTab(v)}
         sx={{ borderBottom: 1, borderColor: 'divider' }}
       >
-        <Tab label="Params" />
-        <Tab label="Headers" />
-        <Tab label="Body" />
+        <Tab label={t('request.tab.params')} />
+        <Tab label={t('request.tab.headers')} />
+        <Tab label={t('request.tab.body')} />
       </Tabs>
 
       <Box sx={{ flex: 1, overflow: 'auto', p: 1, minHeight: 0 }}>
