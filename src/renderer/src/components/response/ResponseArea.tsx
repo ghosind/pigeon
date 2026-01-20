@@ -6,7 +6,7 @@ import HeadersViewer from './HeadersViewer'
 import { HTTPResponse } from '@shared/types/response'
 
 type ResponseAreaProps = {
-  response: HTTPResponse | null
+  response?: HTTPResponse
 }
 
 export default function ResponseArea({ response }: ResponseAreaProps): React.ReactElement | null {

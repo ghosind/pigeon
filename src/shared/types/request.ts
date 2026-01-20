@@ -35,7 +35,7 @@ export interface HTTPTLSConfig {
 }
 
 export interface HTTPRequest {
-  id?: string
+  // id?: string
   method?: HTTPMethod
   url: string
   headers?: KeyValuePair[]

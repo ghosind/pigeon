@@ -4,7 +4,7 @@ import RawEditor from '@renderer/components/common/RawEditor'
 import { HTTPResponse } from '@shared/types/response'
 
 type BodyViewerProps = {
-  response: HTTPResponse | null
+  response?: HTTPResponse
 }
 
 export default function BodyViewer({ response }: BodyViewerProps): React.ReactElement {

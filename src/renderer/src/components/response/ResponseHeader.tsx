@@ -3,7 +3,7 @@ import { HTTPResponse } from '@shared/types/response'
 import { formatSize } from '@shared/utils/unit'
 
 type ResponseHeaderProps = {
-  response: HTTPResponse | null
+  response?: HTTPResponse
   panel: string
   setPanel: (p: string) => void
 }

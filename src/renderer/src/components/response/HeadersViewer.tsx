@@ -10,7 +10,7 @@ import {
 import { HTTPResponse } from '@shared/types/response'
 
 type HeadersViewerProps = {
-  response: HTTPResponse | null
+  response?: HTTPResponse
 }
 
 export default function HeadersViewer({ response }: HeadersViewerProps): React.ReactElement {
