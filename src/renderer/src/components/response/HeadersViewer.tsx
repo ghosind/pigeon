@@ -21,7 +21,7 @@ export default function HeadersViewer({ response }: HeadersViewerProps): React.R
     : []
 
   return (
-    <TableContainer component={Box} sx={{ boxShadow: 'none' }}>
+    <TableContainer component={Box} sx={{ boxShadow: 'none', height: '100%', overflow: 'auto' }}>
       <Table size="small">
         <TableHead>
           <TableRow>
