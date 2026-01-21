@@ -8,6 +8,7 @@ const en = {
   'theme.option.dark': 'Dark',
   'theme.option.system': 'System',
   'settings.language.title': 'Language',
+  'settings.language.description': 'Choose the language for the application',
   'language.option.en': 'English',
   'language.option.zh': '简体中文',
   'layout.settings.tooltip': 'Settings',

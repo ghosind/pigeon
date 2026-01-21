@@ -17,7 +17,7 @@ export default function ResponseHeader({
   const { t } = useI18n()
   if (!response) {
     return (
-      <Box sx={{ mb: 1 }}>
+      <Box sx={{ mb: 1, p: 1 }}>
         <Typography>{t('response.header.title')}</Typography>
       </Box>
     )

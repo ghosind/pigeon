@@ -34,7 +34,7 @@ export function useSettingsSchema(): FieldSchema[] {
     {
       key: 'language',
       title: t('settings.language.title'),
-      description: '',
+      description: t('settings.language.description'),
       type: 'select',
       options: [
         { value: 'en', label: t('language.option.en') },

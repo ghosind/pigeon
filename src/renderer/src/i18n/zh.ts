@@ -8,6 +8,7 @@ const zh = {
   'theme.option.dark': '深色',
   'theme.option.system': '跟随系统',
   'settings.language.title': '语言',
+  'settings.language.description': '选择应用的语言',
   'language.option.en': 'English',
   'language.option.zh': '简体中文',
   'layout.settings.tooltip': '设置',
