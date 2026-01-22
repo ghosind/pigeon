@@ -5,6 +5,7 @@ import TabBar from '@renderer/components/common/TabBar'
 import RequestPanel from '@renderer/components/common/RequestPanel'
 import { HTTPMethod, HTTPRequest, HTTPResponse } from '@shared/types'
 import { useI18n } from '@renderer/contexts/useI18n'
+import { useRequestManager } from '@renderer/contexts/useRequestManager'
 
 type Tab = {
   id: string
@@ -15,6 +16,7 @@ type Tab = {
 
 export default function RequestPage(): React.JSX.Element {
   const { t } = useI18n()
+  const requestManager = useRequestManager()
   const [tabs, setTabs] = useState<Tab[]>(() => [
     { id: uuid.v4(), title: t('default.tab.title'), request: { method: HTTPMethod.GET, url: '' } }
   ])
@@ -35,6 +37,22 @@ export default function RequestPage(): React.JSX.Element {
     setTabs((t) => [...t, newTab])
     setActiveId(id)
   }
+
+  React.useEffect(() => {
+    // register open handler so sidebar can open requests
+    requestManager.registerOpenHandler((req, opts) => {
+      if (opts?.newTab) {
+        const id = uuid.v4()
+        const newTab: Tab = { id, title: t('default.tab.title'), request: req }
+        setTabs((s) => [...s, newTab])
+        setActiveId(id)
+      } else {
+        setTabs((ts) => ts.map((t) => (t.id === activeId ? { ...t, request: req } : t)))
+      }
+    })
+    return () => requestManager.registerOpenHandler(null)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [requestManager, activeId])
 
   const handleRename = (id: string, title: string): void => {
     setTabs((ts) => ts.map((t) => (t.id === id ? { ...t, title } : t)))
@@ -84,6 +102,11 @@ export default function RequestPage(): React.JSX.Element {
   const handleSend = async (): Promise<void> => {
     const resp = await window.api.sendRequest(activeId, request)
     setTabs((ts) => ts.map((t) => (t.id === activeId ? { ...t, response: resp } : t)))
+    try {
+      requestManager.addHistory(request)
+    } catch (e) {
+      console.error(e)
+    }
   }
 
   const handleCancel = (id: string): void => {
@@ -114,3 +137,6 @@ export default function RequestPage(): React.JSX.Element {
     </Box>
   )
 }
+
+// register open handler after component so sidebar can open requests into tabs
+// (open handler registration is done inside the component)
