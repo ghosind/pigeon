@@ -45,7 +45,13 @@ const en = {
   'addressbar.placeholder': 'Enter URL or paste text',
 
   'kv.key': 'Key',
-  'kv.value': 'Value'
+  'kv.value': 'Value',
+
+  'history.title': 'History',
+  'history.group.today': 'Today',
+  'history.group.yesterday': 'Yesterday',
+  'history.group.earlier': 'Earlier',
+  'history.empty': 'No history yet'
 }
 
 export default en

@@ -45,7 +45,12 @@ const zh = {
   'addressbar.placeholder': '输入 URL 或粘贴文本',
 
   'kv.key': '键',
-  'kv.value': '值'
+  'kv.value': '值',
+  'history.title': '历史记录',
+  'history.group.today': '今天',
+  'history.group.yesterday': '昨天',
+  'history.group.earlier': '更早',
+  'history.empty': '暂无历史记录'
 }
 
 export default zh
