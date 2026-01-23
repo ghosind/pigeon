@@ -26,6 +26,7 @@ export default function RequestPage(): React.JSX.Element {
     url: ''
   }
   const response = tabs.find((t) => t.id === activeId)?.response
+  const sendingRef = React.useRef<Record<string, boolean>>({})
 
   const addTab = (): void => {
     const id = uuid.v4()
@@ -100,12 +101,20 @@ export default function RequestPage(): React.JSX.Element {
   }
 
   const handleSend = async (): Promise<void> => {
-    const resp = await window.api.sendRequest(activeId, request)
-    setTabs((ts) => ts.map((t) => (t.id === activeId ? { ...t, response: resp } : t)))
+    if (sendingRef.current[activeId]) {
+      return
+    }
+    sendingRef.current[activeId] = true
     try {
-      requestManager.addHistory(request)
-    } catch (e) {
-      console.error(e)
+      const resp = await window.api.sendRequest(activeId, request)
+      setTabs((ts) => ts.map((t) => (t.id === activeId ? { ...t, response: resp } : t)))
+      try {
+        requestManager.addHistory(request)
+      } catch (e) {
+        console.error(e)
+      }
+    } finally {
+      delete sendingRef.current[activeId]
     }
   }
 

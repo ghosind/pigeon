@@ -25,6 +25,7 @@ export default function RequestPanel({
   onCancel
 }: RequestPanelProps): React.JSX.Element {
   const [isLoading, setIsLoading] = useState<boolean>(false)
+  const sendingRef = React.useRef<Record<string, boolean>>({})
 
   const [centerPct, setCenterPct] = useState<number>(50)
 
@@ -42,12 +43,18 @@ export default function RequestPanel({
   }, [])
 
   const handleSend = async (): Promise<void> => {
+    const key = id || '__default'
+    if (sendingRef.current[key]) {
+      return
+    }
+    sendingRef.current[key] = true
     try {
       setIsLoading(true)
 
       await onSend?.()
     } finally {
       setIsLoading(false)
+      sendingRef.current[key] = false
     }
   }
 
