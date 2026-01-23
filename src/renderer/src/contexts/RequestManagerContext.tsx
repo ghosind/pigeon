@@ -75,6 +75,11 @@ export const RequestManagerProvider: React.FC<React.PropsWithChildren> = ({ chil
     }
   }
 
+  const clearHistory = (): void => {
+    setHistory([])
+    saveHistory([])
+  }
+
   const registerOpenHandler = (h: OpenHandler | null): void => {
     openHandler.current = h
   }
@@ -87,6 +92,7 @@ export const RequestManagerProvider: React.FC<React.PropsWithChildren> = ({ chil
         addCollection,
         removeCollection,
         addHistory,
+        clearHistory,
         openRequest,
         registerOpenHandler
       }}

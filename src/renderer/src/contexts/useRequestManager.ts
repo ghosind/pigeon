@@ -21,6 +21,7 @@ export type RequestManagerContextValue = {
   addCollection: (c: CollectionItem) => void
   removeCollection: (id: string) => void
   addHistory: (req: HTTPRequest) => void
+  clearHistory: () => void
   openRequest: (req: HTTPRequest, opts?: { newTab?: boolean }) => void
   registerOpenHandler: (h: OpenHandler | null) => void
 }

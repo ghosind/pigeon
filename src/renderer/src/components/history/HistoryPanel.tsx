@@ -1,13 +1,14 @@
-import React, { useMemo, useCallback } from 'react'
-import { Box, List, useTheme, Paper } from '@mui/material'
+import React, { useMemo, useCallback, useState } from 'react'
+import { Box, List, useTheme, Paper, TextField, Button } from '@mui/material'
 import { useRequestManager, HistoryItem } from '@renderer/contexts/useRequestManager'
 import { useI18n } from '@renderer/contexts/useI18n'
 import HistoryGroup from './HistoryGroup'
 
 export default function HistoryPanelRefactor(): React.JSX.Element {
-  const { history, openRequest } = useRequestManager()
+  const { history, openRequest, clearHistory } = useRequestManager()
   const theme = useTheme()
   const { t, lang } = useI18n()
+  const [search, setSearch] = useState<string>('')
 
   const formatGroupKey = useCallback(
     (d: Date): string => {
@@ -31,8 +32,17 @@ export default function HistoryPanelRefactor(): React.JSX.Element {
   )
 
   const groups = useMemo((): Array<{ key: string; items: HistoryItem[] }> => {
+    const q = search.trim().toLowerCase()
+    const filtered = q
+      ? history.filter((h) => {
+          const url = (h.request.url || '').toString().toLowerCase()
+          const method = (h.request.method || '').toString().toLowerCase()
+          return url.includes(q) || method.includes(q)
+        })
+      : history
+
     const map = new Map<string, HistoryItem[]>()
-    history.forEach((h: HistoryItem) => {
+    filtered.forEach((h: HistoryItem) => {
       const key = formatGroupKey(new Date(h.ts))
       if (!map.has(key)) map.set(key, [])
       map.get(key)!.push(h)
@@ -40,7 +50,7 @@ export default function HistoryPanelRefactor(): React.JSX.Element {
     const arr = Array.from(map.entries()).map(([key, items]) => ({ key, items }))
     arr.sort((a, b) => (b.items[0].ts ?? 0) - (a.items[0].ts ?? 0))
     return arr
-  }, [history, formatGroupKey])
+  }, [history, formatGroupKey, search])
 
   return (
     <Box
@@ -63,7 +73,27 @@ export default function HistoryPanelRefactor(): React.JSX.Element {
           overflow: 'hidden'
         }}
       >
-        <Box sx={{ mb: 1, fontWeight: 600 }}>{t('history.title')}</Box>
+        <Box sx={{ mb: 1, display: 'flex', gap: 1, alignItems: 'center' }}>
+          <TextField
+            size="small"
+            placeholder={t('history.search.placeholder')}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            sx={{ flex: 1 }}
+          />
+          <Button
+            size="small"
+            variant="outlined"
+            color="inherit"
+            onClick={() => {
+              if (window.confirm(t('history.clear.confirm'))) {
+                clearHistory()
+              }
+            }}
+          >
+            {t('history.clear')}
+          </Button>
+        </Box>
         <List sx={{ flex: 1, overflow: 'auto' }}>
           {groups.length === 0 && (
             <Box sx={{ p: 2, color: theme.palette.text.secondary }}>{t('history.empty')}</Box>

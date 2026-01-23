@@ -48,6 +48,9 @@ const en = {
   'kv.value': 'Value',
 
   'history.title': 'History',
+  'history.search.placeholder': 'Search history',
+  'history.clear': 'Clear',
+  'history.clear.confirm': 'Clear all history? This cannot be undone.',
   'history.group.today': 'Today',
   'history.group.yesterday': 'Yesterday',
   'history.group.earlier': 'Earlier',
