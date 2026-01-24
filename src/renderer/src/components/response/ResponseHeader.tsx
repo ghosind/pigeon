@@ -1,5 +1,5 @@
 import { Box, Typography, Chip, FormControl, Select, MenuItem } from '@mui/material'
-import { HTTPResponse } from '@shared/types/response'
+import { HTTPResponse } from '@shared/types'
 import { formatSize } from '@shared/utils/unit'
 import { useI18n } from '../../contexts/useI18n'
 

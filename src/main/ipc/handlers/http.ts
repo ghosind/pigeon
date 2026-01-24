@@ -1,7 +1,7 @@
 import { IpcMain } from 'electron'
 import { RequestEngine } from '@main/network/requestEngine'
 import { IPC_REQUEST_SEND, IPC_REQUEST_ABORT } from '@shared/constants/channels'
-import { HTTPRequest } from '@shared/types/request'
+import { HTTPRequest } from '@shared/types/http'
 
 const engine = new RequestEngine()
 

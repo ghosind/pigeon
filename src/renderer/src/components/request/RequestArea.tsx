@@ -3,7 +3,7 @@ import { Box, Tabs, Tab } from '@mui/material'
 import { useI18n } from '../../contexts/useI18n'
 import KeyValueEditor from './KeyValueEditor'
 import BodyEditor from './BodyEditor'
-import { HTTPRequest } from '@shared/types/request'
+import { HTTPRequest } from '@shared/types'
 import { Url } from '@shared/utils/url'
 
 type RequestAreaProps = {

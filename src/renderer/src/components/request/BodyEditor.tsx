@@ -6,7 +6,7 @@ import RawEditor from '@renderer/components/common/RawEditor'
 import RawControls from './RawControls'
 import KeyValueEditor from './KeyValueEditor'
 import { KeyValuePair } from '@shared/types/kv'
-import { HTTPBody, HTTPBodyMode, HTTPContentType } from '@shared/types/request'
+import { HTTPBody, HTTPBodyMode, HTTPContentType } from '@shared/types'
 
 type BodyEditorProps = {
   body?: HTTPBody

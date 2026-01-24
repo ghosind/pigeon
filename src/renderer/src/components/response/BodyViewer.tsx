@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { Box } from '@mui/material'
 import RawEditor from '@renderer/components/common/RawEditor'
-import { HTTPResponse } from '@shared/types/response'
+import { HTTPResponse } from '@shared/types'
 
 type BodyViewerProps = {
   response?: HTTPResponse

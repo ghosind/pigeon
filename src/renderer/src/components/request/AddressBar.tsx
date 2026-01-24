@@ -4,7 +4,7 @@ import SendIcon from '@mui/icons-material/Send'
 import CancelIcon from '@mui/icons-material/Cancel'
 import { useI18n } from '../../contexts/useI18n'
 import { KeyValuePair } from '@shared/types/kv'
-import { HTTPMethod, HTTPRequest } from '@shared/types/request'
+import { HTTPMethod, HTTPRequest } from '@shared/types'
 import { Url } from '@shared/utils/url'
 
 type AddressBarProps = {

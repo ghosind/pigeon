@@ -4,8 +4,7 @@ import AddressBar from '@renderer/components/request/AddressBar'
 import RequestArea from '@renderer/components/request/RequestArea'
 import ResponseArea from '@renderer/components/response/ResponseArea'
 import Splitter from '@renderer/components/common/Splitter'
-import { HTTPRequest } from '@shared/types/request'
-import { HTTPResponse } from '@shared/types/response'
+import { HTTPRequest, HTTPResponse } from '@shared/types'
 
 type RequestPanelProps = {
   id: string

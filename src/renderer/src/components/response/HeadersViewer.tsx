@@ -7,7 +7,7 @@ import {
   TableHead,
   TableRow
 } from '@mui/material'
-import { HTTPResponse } from '@shared/types/response'
+import { HTTPResponse } from '@shared/types'
 import { useI18n } from '../../contexts/useI18n'
 
 type HeadersViewerProps = {

@@ -3,22 +3,20 @@ import * as uuid from 'uuid'
 import { Box } from '@mui/material'
 import TabBar from '@renderer/components/common/TabBar'
 import RequestPanel from '@renderer/components/common/RequestPanel'
-import { HTTPMethod, HTTPRequest, HTTPResponse } from '@shared/types'
+import { HTTPMethod, HTTPRequest, Request, RequestType } from '@shared/types'
 import { useI18n } from '@renderer/contexts/useI18n'
 import { useRequestManager } from '@renderer/contexts/useRequestManager'
-
-type Tab = {
-  id: string
-  title: string
-  request: HTTPRequest
-  response?: HTTPResponse
-}
 
 export default function RequestPage(): React.JSX.Element {
   const { t } = useI18n()
   const requestManager = useRequestManager()
-  const [tabs, setTabs] = useState<Tab[]>(() => [
-    { id: uuid.v4(), title: t('default.tab.title'), request: { method: HTTPMethod.GET, url: '' } }
+  const [tabs, setTabs] = useState<Request[]>(() => [
+    {
+      id: uuid.v4(),
+      title: t('default.tab.title'),
+      request: { method: HTTPMethod.GET, url: '' },
+      type: RequestType.HTTP
+    }
   ])
   const [activeId, setActiveId] = useState<string>(tabs[0].id)
   const request = tabs.find((t) => t.id === activeId)?.request || {
@@ -30,10 +28,11 @@ export default function RequestPage(): React.JSX.Element {
 
   const addTab = (): void => {
     const id = uuid.v4()
-    const newTab: Tab = {
+    const newTab: Request = {
       id,
       title: t('default.tab.title'),
-      request: { method: HTTPMethod.GET, url: '' }
+      request: { method: HTTPMethod.GET, url: '' },
+      type: RequestType.HTTP
     }
     setTabs((t) => [...t, newTab])
     setActiveId(id)
@@ -44,7 +43,12 @@ export default function RequestPage(): React.JSX.Element {
     requestManager.registerOpenHandler((req, opts) => {
       if (opts?.newTab) {
         const id = uuid.v4()
-        const newTab: Tab = { id, title: t('default.tab.title'), request: req }
+        const newTab: Request = {
+          id,
+          title: t('default.tab.title'),
+          request: req,
+          type: RequestType.HTTP
+        }
         setTabs((s) => [...s, newTab])
         setActiveId(id)
       } else {
@@ -83,10 +87,11 @@ export default function RequestPage(): React.JSX.Element {
         setActiveId(newActiveTab.id)
       } else {
         const newId = uuid.v4()
-        const newTab: Tab = {
+        const newTab: Request = {
           id: newId,
           title: 'Untitled Request',
-          request: { method: HTTPMethod.GET, url: '' }
+          request: { method: HTTPMethod.GET, url: '' },
+          type: RequestType.HTTP
         }
         setTabs([newTab])
         setActiveId(newId)
