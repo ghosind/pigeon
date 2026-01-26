@@ -12,13 +12,13 @@ import {
 import ExpandLessIcon from '@mui/icons-material/ExpandLess'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import { HistoryItem } from '@renderer/contexts/useRequestManager'
-import { HTTPRequest } from '@shared/types'
+import { Request } from '@shared/types'
 import { getMethodColors } from '@renderer/shared/constants/methodColors'
 
 type Props = {
   title: string
   items: HistoryItem[]
-  openRequest: (req: HTTPRequest, opts?: { newTab?: boolean }) => void
+  openRequest: (req: Request, opts?: { newTab?: boolean }) => void
 }
 
 export default function HistoryGroup({ title, items, openRequest }: Props): React.JSX.Element {
@@ -50,7 +50,7 @@ export default function HistoryGroup({ title, items, openRequest }: Props): Reac
       </Box>
       <Collapse in={expanded} timeout="auto" unmountOnExit>
         {items.map((h) => {
-          const method = (h.request.method || '').toString().toUpperCase()
+          const method = (h.request.request.method || '').toString().toUpperCase()
           const color = methodColors[method] || theme.palette.text.primary
 
           return (
@@ -74,10 +74,10 @@ export default function HistoryGroup({ title, items, openRequest }: Props): Reac
                 />
                 <Box sx={{ flex: 1, minWidth: 0 }}>
                   <Typography noWrap variant="body2">
-                    {h.request.url}
+                    {h.request.request.url}
                   </Typography>
                   <Typography noWrap variant="caption" color="text.secondary">
-                    {new Date(h.ts).toLocaleTimeString()}
+                    {new Date(h.timestamp).toLocaleTimeString()}
                   </Typography>
                 </Box>
               </Box>

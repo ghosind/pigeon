@@ -35,20 +35,20 @@ export default function HistoryPanelRefactor(): React.JSX.Element {
     const q = search.trim().toLowerCase()
     const filtered = q
       ? history.filter((h) => {
-          const url = (h.request.url || '').toString().toLowerCase()
-          const method = (h.request.method || '').toString().toLowerCase()
+          const url = (h.request.request.url || '').toString().toLowerCase()
+          const method = (h.request.request.method || '').toString().toLowerCase()
           return url.includes(q) || method.includes(q)
         })
       : history
 
     const map = new Map<string, HistoryItem[]>()
     filtered.forEach((h: HistoryItem) => {
-      const key = formatGroupKey(new Date(h.ts))
+      const key = formatGroupKey(new Date(h.timestamp))
       if (!map.has(key)) map.set(key, [])
       map.get(key)!.push(h)
     })
     const arr = Array.from(map.entries()).map(([key, items]) => ({ key, items }))
-    arr.sort((a, b) => (b.items[0].ts ?? 0) - (a.items[0].ts ?? 0))
+    arr.sort((a, b) => (b.items[0].timestamp ?? 0) - (a.items[0].timestamp ?? 0))
     return arr
   }, [history, formatGroupKey, search])
 

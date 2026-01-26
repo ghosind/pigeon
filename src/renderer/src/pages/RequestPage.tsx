@@ -26,6 +26,27 @@ export default function RequestPage(): React.JSX.Element {
   const response = tabs.find((t) => t.id === activeId)?.response
   const sendingRef = React.useRef<Record<string, boolean>>({})
 
+  React.useEffect(() => {
+    // register open handler so sidebar can open requests
+    requestManager.registerOpenHandler((req, opts) => {
+      if (opts?.newTab) {
+        const id = uuid.v4()
+        setTabs((s) => [...s, req])
+        setActiveId(id)
+      } else {
+        setTabs((s) => {
+          const exists = s.find((t) => t.id === req.id)
+          if (exists) {
+            return s
+          }
+          return s.map((t) => (t.id === activeId ? req : t))
+        })
+        setActiveId(req.id)
+      }
+    })
+    return () => requestManager.registerOpenHandler(null)
+  }, [requestManager, activeId])
+
   const addTab = (): void => {
     const id = uuid.v4()
     const newTab: Request = {
@@ -37,27 +58,6 @@ export default function RequestPage(): React.JSX.Element {
     setTabs((t) => [...t, newTab])
     setActiveId(id)
   }
-
-  React.useEffect(() => {
-    // register open handler so sidebar can open requests
-    requestManager.registerOpenHandler((req, opts) => {
-      if (opts?.newTab) {
-        const id = uuid.v4()
-        const newTab: Request = {
-          id,
-          title: t('default.tab.title'),
-          request: req,
-          type: RequestType.HTTP
-        }
-        setTabs((s) => [...s, newTab])
-        setActiveId(id)
-      } else {
-        setTabs((ts) => ts.map((t) => (t.id === activeId ? { ...t, request: req } : t)))
-      }
-    })
-    return () => requestManager.registerOpenHandler(null)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [requestManager, activeId])
 
   const handleRename = (id: string, title: string): void => {
     setTabs((ts) => ts.map((t) => (t.id === id ? { ...t, title } : t)))
@@ -113,8 +113,11 @@ export default function RequestPage(): React.JSX.Element {
     try {
       const resp = await window.api.sendRequest(activeId, request)
       setTabs((ts) => ts.map((t) => (t.id === activeId ? { ...t, response: resp } : t)))
+      const tab = tabs.find((t) => t.id === activeId)
       try {
-        requestManager.addHistory(request)
+        if (tab) {
+          requestManager.addHistory(tab)
+        }
       } catch (e) {
         console.error(e)
       }

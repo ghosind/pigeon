@@ -1,28 +1,22 @@
 import { createContext, useContext } from 'react'
-import { HTTPRequest } from '@shared/types'
-
-export type CollectionItem = {
-  id: string
-  name: string
-  request: HTTPRequest
-}
+import { Request } from '@shared/types'
 
 export type HistoryItem = {
   id: string
-  request: HTTPRequest
-  ts: number
+  request: Request
+  timestamp: number
 }
 
-export type OpenHandler = (req: HTTPRequest, options?: { newTab?: boolean }) => void
+export type OpenHandler = (req: Request, options?: { newTab?: boolean }) => void
 
 export type RequestManagerContextValue = {
-  collections: CollectionItem[]
+  collections: Request[]
   history: HistoryItem[]
-  addCollection: (c: CollectionItem) => void
+  addCollection: (c: Request) => void
   removeCollection: (id: string) => void
-  addHistory: (req: HTTPRequest) => void
+  addHistory: (req: Request) => void
   clearHistory: () => void
-  openRequest: (req: HTTPRequest, opts?: { newTab?: boolean }) => void
+  openRequest: (req: Request, opts?: { newTab?: boolean }) => void
   registerOpenHandler: (h: OpenHandler | null) => void
 }
 

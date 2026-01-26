@@ -1,16 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react'
-import { HTTPRequest } from '@shared/types'
-import {
-  RequestManagerContext,
-  CollectionItem,
-  HistoryItem,
-  OpenHandler
-} from './useRequestManager'
+import { Request } from '@shared/types'
+import { RequestManagerContext, HistoryItem, OpenHandler } from './useRequestManager'
 
 const KEY_COLLECTIONS = 'pigeon:collections'
 const KEY_HISTORY = 'pigeon:history'
 
-function loadCollections(): CollectionItem[] {
+function loadCollections(): Request[] {
   try {
     const raw = localStorage.getItem(KEY_COLLECTIONS)
     return raw ? JSON.parse(raw) : []
@@ -20,7 +15,7 @@ function loadCollections(): CollectionItem[] {
   }
 }
 
-function saveCollections(list: CollectionItem[]): void {
+function saveCollections(list: Request[]): void {
   try {
     localStorage.setItem(KEY_COLLECTIONS, JSON.stringify(list))
   } catch (e) {
@@ -47,21 +42,21 @@ function saveHistory(list: HistoryItem[]): void {
 }
 
 export const RequestManagerProvider: React.FC<React.PropsWithChildren> = ({ children }) => {
-  const [collections, setCollections] = useState<CollectionItem[]>(() => loadCollections())
+  const [collections, setCollections] = useState<Request[]>(() => loadCollections())
   const [history, setHistory] = useState<HistoryItem[]>(() => loadHistory())
   const openHandler = useRef<OpenHandler | null>(null)
 
   useEffect(() => saveCollections(collections), [collections])
   useEffect(() => saveHistory(history), [history])
 
-  const addCollection = (c: CollectionItem): void => setCollections((s) => [...s, c])
+  const addCollection = (c: Request): void => setCollections((s) => [...s, c])
   const removeCollection = (id: string): void => setCollections((s) => s.filter((x) => x.id !== id))
 
-  const addHistory = (req: HTTPRequest): void => {
+  const addHistory = (req: Request): void => {
     const item: HistoryItem = {
       id: String(Date.now()) + Math.random().toString(36).slice(2),
       request: req,
-      ts: Date.now()
+      timestamp: Date.now()
     }
     setHistory((s) => {
       const next = [item, ...s].slice(0, 200)
@@ -69,7 +64,7 @@ export const RequestManagerProvider: React.FC<React.PropsWithChildren> = ({ chil
     })
   }
 
-  const openRequest = (req: HTTPRequest, opts?: { newTab?: boolean }): void => {
+  const openRequest = (req: Request, opts?: { newTab?: boolean }): void => {
     if (openHandler.current) {
       openHandler.current(req, opts)
     }
