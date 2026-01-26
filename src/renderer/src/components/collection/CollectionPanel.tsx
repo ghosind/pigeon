@@ -71,7 +71,7 @@ export default function CollectionPanel(): React.JSX.Element {
         <PromptDialog open={promptOpen} title="Collection name" onClose={handlePromptClose} />
 
         <List sx={{ flex: 1, overflow: 'auto', background: 'transparent' }}>
-          {collections.map((c) => (
+          {collections?.map?.((c) => (
             <ListItemButton
               key={c.id}
               onClick={() => openRequest(c, { newTab: true })}

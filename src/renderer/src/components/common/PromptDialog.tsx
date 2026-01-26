@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import React, { useEffect, useRef } from 'react'
 import Dialog from '@mui/material/Dialog'
 import DialogTitle from '@mui/material/DialogTitle'
 import DialogContent from '@mui/material/DialogContent'
@@ -18,7 +18,7 @@ export default function PromptDialog({
   title = 'Input',
   defaultValue = '',
   onClose
-}: Props): JSX.Element {
+}: Props): React.JSX.Element {
   const inputRef = useRef<HTMLInputElement | null>(null)
 
   useEffect(() => {
@@ -39,7 +39,9 @@ export default function PromptDialog({
           autoFocus
           fullWidth
           variant="outlined"
-          inputRef={(el) => (inputRef.current = el as HTMLInputElement)}
+          inputRef={(el) => {
+            inputRef.current = el as HTMLInputElement
+          }}
           defaultValue={defaultValue}
         />
       </DialogContent>
