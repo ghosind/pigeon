@@ -11,17 +11,20 @@ import {
 } from '@mui/material'
 import ExpandLessIcon from '@mui/icons-material/ExpandLess'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
-import { HistoryItem } from '@renderer/contexts/useRequestManager'
-import { Request } from '@shared/types'
+import { Request, RequestHistory } from '@shared/types'
 import { getMethodColors } from '@renderer/shared/constants/methodColors'
 
-type Props = {
+type HistoryGroupProps = {
   title: string
-  items: HistoryItem[]
-  openRequest: (req: Request, opts?: { newTab?: boolean }) => void
+  histories: RequestHistory[]
+  openRequest: (req: Request) => void
 }
 
-export default function HistoryGroup({ title, items, openRequest }: Props): React.JSX.Element {
+export default function HistoryGroup({
+  title,
+  histories,
+  openRequest
+}: HistoryGroupProps): React.JSX.Element {
   const theme = useTheme()
   const [expanded, setExpanded] = useState<boolean>(true)
 
@@ -49,14 +52,21 @@ export default function HistoryGroup({ title, items, openRequest }: Props): Reac
         </IconButton>
       </Box>
       <Collapse in={expanded} timeout="auto" unmountOnExit>
-        {items.map((h) => {
-          const method = (h.request.request.method || '').toString().toUpperCase()
+        {histories.map((h) => {
+          const method = (h.request.method || '').toString().toUpperCase()
           const color = methodColors[method] || theme.palette.text.primary
 
           return (
             <ListItemButton
               key={h.id}
-              onClick={() => openRequest(h.request, { newTab: true })}
+              onClick={() => {
+                const req: Request = {
+                  id: h.id,
+                  type: h.type,
+                  request: h.request
+                }
+                openRequest(req)
+              }}
               sx={{ '&:hover': { bgcolor: theme.palette.action.hover }, px: 1 }}
             >
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%' }}>
@@ -74,7 +84,7 @@ export default function HistoryGroup({ title, items, openRequest }: Props): Reac
                 />
                 <Box sx={{ flex: 1, minWidth: 0 }}>
                   <Typography noWrap variant="body2">
-                    {h.request.request.url}
+                    {h.request.url}
                   </Typography>
                   <Typography noWrap variant="caption" color="text.secondary">
                     {new Date(h.timestamp).toLocaleTimeString()}

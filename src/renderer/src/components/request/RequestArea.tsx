@@ -3,12 +3,12 @@ import { Box, Tabs, Tab } from '@mui/material'
 import { useI18n } from '../../contexts/useI18n'
 import KeyValueEditor from './KeyValueEditor'
 import BodyEditor from './BodyEditor'
-import { HTTPRequest } from '@shared/types'
+import { Request, HTTPRequest } from '@shared/types'
 import { Url } from '@shared/utils/url'
 
 type RequestAreaProps = {
-  request: HTTPRequest
-  onChange: (request: HTTPRequest) => void
+  request: Request
+  onChange: (request: Request) => void
 }
 
 export default function RequestArea({ request, onChange }: RequestAreaProps): React.ReactElement {
@@ -16,7 +16,7 @@ export default function RequestArea({ request, onChange }: RequestAreaProps): Re
   const { t } = useI18n()
 
   const onParamsChange = (params: HTTPRequest['params']): void => {
-    const { url } = request
+    const { url } = request?.request || {}
     const urlObj = new Url(url || '')
     const search = new URLSearchParams()
     params?.forEach((row) => {
@@ -28,17 +28,20 @@ export default function RequestArea({ request, onChange }: RequestAreaProps): Re
 
     onChange({
       ...request,
-      url: urlObj.toString(),
-      params
+      request: {
+        ...request.request,
+        url: urlObj.toString(),
+        params
+      }
     })
   }
 
   const onHeadersChange = (headers: HTTPRequest['headers']): void => {
-    onChange({ ...request, headers })
+    onChange({ ...request, request: { ...request.request, headers } })
   }
 
   const onBodyChange = (body: HTTPRequest['body']): void => {
-    onChange({ ...request, body })
+    onChange({ ...request, request: { ...request.request, body } })
   }
 
   return (
@@ -63,9 +66,13 @@ export default function RequestArea({ request, onChange }: RequestAreaProps): Re
       </Tabs>
 
       <Box sx={{ flex: 1, overflow: 'auto', p: 1, minHeight: 0 }}>
-        {tab === 0 && <KeyValueEditor rows={request.params || []} onChange={onParamsChange} />}
-        {tab === 1 && <KeyValueEditor rows={request.headers || []} onChange={onHeadersChange} />}
-        {tab === 2 && <BodyEditor body={request.body} onChange={onBodyChange} />}
+        {tab === 0 && (
+          <KeyValueEditor rows={request?.request.params || []} onChange={onParamsChange} />
+        )}
+        {tab === 1 && (
+          <KeyValueEditor rows={request?.request.headers || []} onChange={onHeadersChange} />
+        )}
+        {tab === 2 && <BodyEditor body={request?.request.body} onChange={onBodyChange} />}
       </Box>
     </Box>
   )

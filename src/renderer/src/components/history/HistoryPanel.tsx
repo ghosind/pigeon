@@ -1,10 +1,11 @@
 import React, { useMemo, useCallback, useState } from 'react'
 import { Box, List, useTheme, Paper, TextField, Button } from '@mui/material'
-import { useRequestManager, HistoryItem } from '@renderer/contexts/useRequestManager'
+import { useRequestManager } from '@renderer/contexts/useRequestManager'
 import { useI18n } from '@renderer/contexts/useI18n'
+import { RequestHistory } from '@shared/types'
 import HistoryGroup from './HistoryGroup'
 
-export default function HistoryPanelRefactor(): React.JSX.Element {
+export default function HistoryPanel(): React.JSX.Element {
   const { history, openRequest, clearHistory } = useRequestManager()
   const theme = useTheme()
   const { t, lang } = useI18n()
@@ -18,10 +19,14 @@ export default function HistoryPanelRefactor(): React.JSX.Element {
         a.getDate() === b.getDate()
 
       const today = new Date()
-      if (sameDay(d, today)) return t('history.group.today')
+      if (sameDay(d, today)) {
+        return t('history.group.today')
+      }
       const yesterday = new Date()
       yesterday.setDate(today.getDate() - 1)
-      if (sameDay(d, yesterday)) return t('history.group.yesterday')
+      if (sameDay(d, yesterday)) {
+        return t('history.group.yesterday')
+      }
       return new Intl.DateTimeFormat(lang === 'zh' ? 'zh-CN' : 'en-US', {
         year: 'numeric',
         month: 'short',
@@ -31,18 +36,16 @@ export default function HistoryPanelRefactor(): React.JSX.Element {
     [lang, t]
   )
 
-  const groups = useMemo((): Array<{ key: string; items: HistoryItem[] }> => {
+  const groups = useMemo((): Array<{ key: string; items: RequestHistory[] }> => {
     const q = search.trim().toLowerCase()
     const filtered = q
       ? history.filter((h) => {
-          const url = (h.request.request.url || '').toString().toLowerCase()
-          const method = (h.request.request.method || '').toString().toLowerCase()
-          return url.includes(q) || method.includes(q)
+          const url = (h.request.url || '').toString().toLowerCase()
+          return url.includes(q)
         })
       : history
-
-    const map = new Map<string, HistoryItem[]>()
-    filtered.forEach((h: HistoryItem) => {
+    const map = new Map<string, RequestHistory[]>()
+    filtered.forEach((h: RequestHistory) => {
       const key = formatGroupKey(new Date(h.timestamp))
       if (!map.has(key)) map.set(key, [])
       map.get(key)!.push(h)
@@ -99,7 +102,7 @@ export default function HistoryPanelRefactor(): React.JSX.Element {
             <Box sx={{ p: 2, color: theme.palette.text.secondary }}>{t('history.empty')}</Box>
           )}
           {groups.map((g) => (
-            <HistoryGroup key={g.key} title={g.key} items={g.items} openRequest={openRequest} />
+            <HistoryGroup key={g.key} title={g.key} histories={g.items} openRequest={openRequest} />
           ))}
         </List>
       </Paper>

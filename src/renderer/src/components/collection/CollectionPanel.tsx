@@ -74,7 +74,7 @@ export default function CollectionPanel(): React.JSX.Element {
           {collections?.map?.((c) => (
             <ListItemButton
               key={c.id}
-              onClick={() => openRequest(c, { newTab: true })}
+              onClick={() => openRequest(c)}
               sx={{ pr: 1, '&:hover': { bgcolor: theme.palette.action.hover } }}
             >
               <ListItemText primary={c.title} secondary={c.request.url || '(empty)'} />

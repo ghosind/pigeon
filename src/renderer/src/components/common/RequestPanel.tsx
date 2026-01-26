@@ -4,13 +4,12 @@ import AddressBar from '@renderer/components/request/AddressBar'
 import RequestArea from '@renderer/components/request/RequestArea'
 import ResponseArea from '@renderer/components/response/ResponseArea'
 import Splitter from '@renderer/components/common/Splitter'
-import { HTTPRequest, HTTPResponse } from '@shared/types'
+import { Request } from '@shared/types'
 
 type RequestPanelProps = {
   id: string
-  request: HTTPRequest
-  onChange: (r: HTTPRequest) => void
-  response?: HTTPResponse
+  request: Request
+  onChange: (r: Request) => void
   onSend?: () => Promise<void>
   onCancel?: (id: string) => void
 }
@@ -19,7 +18,6 @@ export default function RequestPanel({
   id,
   request,
   onChange,
-  response,
   onSend,
   onCancel
 }: RequestPanelProps): React.JSX.Element {
@@ -107,7 +105,7 @@ export default function RequestPanel({
 
           <Box sx={{ width: `${100 - centerPct}%`, display: 'flex', minWidth: 0 }}>
             <Paper sx={{ p: 1, flex: 1, display: 'flex', minHeight: 0, minWidth: 0 }}>
-              <ResponseArea response={response} />
+              <ResponseArea response={request.response} />
             </Paper>
           </Box>
         </Box>

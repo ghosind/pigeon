@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
-import { Request } from '@shared/types'
-import { RequestManagerContext, HistoryItem, OpenHandler } from './useRequestManager'
+import * as uuid from 'uuid'
+import { Request, RequestHistory } from '@shared/types'
+import { RequestManagerContext, OpenHandler } from './useRequestManager'
 
 const KEY_COLLECTIONS = 'pigeon:collections'
 const KEY_HISTORY = 'pigeon:history'
@@ -23,7 +24,7 @@ function saveCollections(list: Request[]): void {
   }
 }
 
-function loadHistory(): HistoryItem[] {
+function loadHistory(): RequestHistory[] {
   try {
     const raw = localStorage.getItem(KEY_HISTORY)
     return raw ? JSON.parse(raw) : []
@@ -33,7 +34,7 @@ function loadHistory(): HistoryItem[] {
   }
 }
 
-function saveHistory(list: HistoryItem[]): void {
+function saveHistory(list: RequestHistory[]): void {
   try {
     localStorage.setItem(KEY_HISTORY, JSON.stringify(list))
   } catch (e) {
@@ -43,7 +44,7 @@ function saveHistory(list: HistoryItem[]): void {
 
 export const RequestManagerProvider: React.FC<React.PropsWithChildren> = ({ children }) => {
   const [collections, setCollections] = useState<Request[]>(() => loadCollections())
-  const [history, setHistory] = useState<HistoryItem[]>(() => loadHistory())
+  const [history, setHistory] = useState<RequestHistory[]>(() => loadHistory())
   const openHandler = useRef<OpenHandler | null>(null)
 
   useEffect(() => saveCollections(collections), [collections])
@@ -53,13 +54,16 @@ export const RequestManagerProvider: React.FC<React.PropsWithChildren> = ({ chil
   const removeCollection = (id: string): void => setCollections((s) => s.filter((x) => x.id !== id))
 
   const addHistory = (req: Request): void => {
-    const item: HistoryItem = {
-      id: String(Date.now()) + Math.random().toString(36).slice(2),
-      request: req,
+    const item: RequestHistory = {
+      id: uuid.v4(),
+      requestId: req.id,
+      type: req.type,
+      request: req.request,
+      response: req.response,
       timestamp: Date.now()
     }
     setHistory((s) => {
-      const next = [item, ...s].slice(0, 200)
+      const next = [item, ...s]
       return next
     })
   }

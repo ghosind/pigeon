@@ -1,13 +1,10 @@
 import { HTTPRequest, HTTPResponse } from './http'
+import { RequestType } from './request'
 
-export enum RequestType {
-  HTTP = 'http'
-}
-
-export interface Request {
+export type RequestHistory = {
   id: string
-  title?: string
-  isTitled?: boolean
+  requestId: string
+  timestamp: number
   type: RequestType
   request: HTTPRequest
   response?: HTTPResponse

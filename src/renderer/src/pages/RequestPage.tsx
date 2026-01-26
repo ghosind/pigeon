@@ -3,68 +3,51 @@ import * as uuid from 'uuid'
 import { Box } from '@mui/material'
 import TabBar from '@renderer/components/common/TabBar'
 import RequestPanel from '@renderer/components/common/RequestPanel'
-import { HTTPMethod, HTTPRequest, Request, RequestType } from '@shared/types'
-import { useI18n } from '@renderer/contexts/useI18n'
+import { HTTPMethod, Request, RequestType } from '@shared/types'
 import { useRequestManager } from '@renderer/contexts/useRequestManager'
 
 export default function RequestPage(): React.JSX.Element {
-  const { t } = useI18n()
   const requestManager = useRequestManager()
-  const [tabs, setTabs] = useState<Request[]>(() => [
+  const [requests, setRequests] = useState<Request[]>(() => [
     {
       id: uuid.v4(),
-      title: t('default.tab.title'),
       request: { method: HTTPMethod.GET, url: '' },
       type: RequestType.HTTP
     }
   ])
-  const [activeId, setActiveId] = useState<string>(tabs[0].id)
-  const request = tabs.find((t) => t.id === activeId)?.request || {
-    method: HTTPMethod.GET,
-    url: ''
-  }
-  const response = tabs.find((t) => t.id === activeId)?.response
+  const [activeId, setActiveId] = useState<string>(requests[0].id)
   const sendingRef = React.useRef<Record<string, boolean>>({})
 
   React.useEffect(() => {
-    // register open handler so sidebar can open requests
-    requestManager.registerOpenHandler((req, opts) => {
-      if (opts?.newTab) {
-        const id = uuid.v4()
-        setTabs((s) => [...s, req])
-        setActiveId(id)
-      } else {
-        setTabs((s) => {
-          const exists = s.find((t) => t.id === req.id)
-          if (exists) {
-            return s
-          }
-          return s.map((t) => (t.id === activeId ? req : t))
-        })
-        setActiveId(req.id)
+    requestManager.registerOpenHandler((req) => {
+      const id = req.id || uuid.v4()
+      const exists = requests.find((t) => t.id === id)
+      if (!exists) {
+        setRequests((s) => [...s, req])
       }
+      setActiveId(id)
     })
     return () => requestManager.registerOpenHandler(null)
-  }, [requestManager, activeId])
+  }, [requestManager, activeId, requests])
 
-  const addTab = (): void => {
+  const addRequest = (): void => {
     const id = uuid.v4()
-    const newTab: Request = {
+    const newReq: Request = {
       id,
-      title: t('default.tab.title'),
       request: { method: HTTPMethod.GET, url: '' },
       type: RequestType.HTTP
     }
-    setTabs((t) => [...t, newTab])
+    setRequests((t) => [...t, newReq])
     setActiveId(id)
   }
 
   const handleRename = (id: string, title: string): void => {
-    setTabs((ts) => ts.map((t) => (t.id === id ? { ...t, title } : t)))
+    const isTitled = title.trim().length > 0
+    setRequests((ts) => ts.map((t) => (t.id === id ? { ...t, title, isTitled } : t)))
   }
 
   const handleReorder = (fromId: string, toId: string): void => {
-    setTabs((prev) => {
+    setRequests((prev) => {
       const fromIdx = prev.findIndex((t) => t.id === fromId)
       if (fromIdx === -1) {
         return prev
@@ -78,31 +61,30 @@ export default function RequestPage(): React.JSX.Element {
     })
   }
 
-  const closeTab = (id: string): void => {
-    setTabs((t) => t.filter((tab) => tab.id !== id))
+  const closeRequest = (id: string): void => {
+    setRequests((t) => t.filter((req) => req.id !== id))
     if (activeId === id) {
-      if (tabs.length > 1) {
-        const idx = tabs.findIndex((tab) => tab.id === id)
-        const newActiveTab = tabs[idx === 0 ? 1 : idx - 1]
-        setActiveId(newActiveTab.id)
+      if (requests.length > 1) {
+        const idx = requests.findIndex((req) => req.id === id)
+        const newActiveRequest = requests[idx === 0 ? 1 : idx - 1]
+        setActiveId(newActiveRequest.id)
       } else {
         const newId = uuid.v4()
-        const newTab: Request = {
+        const newReq: Request = {
           id: newId,
-          title: 'Untitled Request',
           request: { method: HTTPMethod.GET, url: '' },
           type: RequestType.HTTP
         }
-        setTabs([newTab])
+        setRequests([newReq])
         setActiveId(newId)
       }
     }
   }
 
-  const selectTab = (id: string): void => setActiveId(id)
+  const selectRequest = (id: string): void => setActiveId(id)
 
-  const handleChange = (updatedRequest: HTTPRequest): void => {
-    setTabs((ts) => ts.map((t) => (t.id === activeId ? { ...t, request: updatedRequest } : t)))
+  const handleChange = (updatedRequest: Request): void => {
+    setRequests((ts) => ts.map((t) => (t.id === activeId ? updatedRequest : t)))
   }
 
   const handleSend = async (): Promise<void> => {
@@ -111,12 +93,16 @@ export default function RequestPage(): React.JSX.Element {
     }
     sendingRef.current[activeId] = true
     try {
-      const resp = await window.api.sendRequest(activeId, request)
-      setTabs((ts) => ts.map((t) => (t.id === activeId ? { ...t, response: resp } : t)))
-      const tab = tabs.find((t) => t.id === activeId)
+      const request = requests.find((t) => t.id === activeId)
+      if (!request) {
+        return
+      }
+      const resp = await window.api.sendRequest(activeId, request?.request)
+      setRequests((ts) => ts.map((t) => (t.id === activeId ? { ...t, response: resp } : t)))
+      const req = requests.find((t) => t.id === activeId)
       try {
-        if (tab) {
-          requestManager.addHistory(tab)
+        if (req) {
+          requestManager.addHistory(req)
         }
       } catch (e) {
         console.error(e)
@@ -133,20 +119,19 @@ export default function RequestPage(): React.JSX.Element {
   return (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       <TabBar
-        tabs={tabs.map((t) => ({ id: t.id, title: t.title }))}
+        requests={requests}
         activeId={activeId}
-        onSelect={selectTab}
-        onClose={closeTab}
-        onAdd={addTab}
+        onSelect={selectRequest}
+        onClose={closeRequest}
+        onAdd={addRequest}
         onRename={handleRename}
         onReorder={handleReorder}
       />
       <Box sx={{ flex: 1, minHeight: 0 }}>
         <RequestPanel
           id={activeId}
-          request={request}
+          request={requests.find((t) => t.id === activeId)!}
           onChange={handleChange}
-          response={response}
           onSend={handleSend}
           onCancel={handleCancel}
         />
@@ -154,6 +139,3 @@ export default function RequestPage(): React.JSX.Element {
     </Box>
   )
 }
-
-// register open handler after component so sidebar can open requests into tabs
-// (open handler registration is done inside the component)

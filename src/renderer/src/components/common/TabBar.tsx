@@ -1,17 +1,25 @@
 import React, { useState } from 'react'
-import { Box, IconButton, Tooltip, Tabs, Tab, TextField, Menu, MenuItem } from '@mui/material'
+import {
+  Box,
+  IconButton,
+  Tooltip,
+  Tabs,
+  Tab,
+  TextField,
+  Menu,
+  MenuItem,
+  Chip,
+  useTheme
+} from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
 import AddIcon from '@mui/icons-material/Add'
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown'
 import { useI18n } from '@renderer/contexts/useI18n'
-
-type TabItem = {
-  id: string
-  title: string
-}
+import { Request } from '@shared/types'
+import { getMethodColors } from '@renderer/shared/constants/methodColors'
 
 type TabBarProps = {
-  tabs: TabItem[]
+  requests: Request[]
   activeId: string | null
   onSelect: (id: string) => void
   onClose: (id: string) => void
@@ -21,7 +29,7 @@ type TabBarProps = {
 }
 
 export default function TabBar({
-  tabs,
+  requests,
   activeId,
   onSelect,
   onClose,
@@ -33,6 +41,8 @@ export default function TabBar({
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editTitle, setEditTitle] = useState<string>('')
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null)
+  const theme = useTheme()
+  const methodColors = getMethodColors(theme)
 
   const startEdit = (id: string, title: string): void => {
     setEditingId(id)
@@ -41,7 +51,7 @@ export default function TabBar({
 
   const commitEdit = (): void => {
     if (editingId && onRename) {
-      onRename(editingId, editTitle.trim() || 'Untitled Request')
+      onRename(editingId, editTitle.trim() || '')
     }
     setEditingId(null)
     setEditTitle('')
@@ -60,6 +70,16 @@ export default function TabBar({
     setMenuAnchor(null)
   }
 
+  const getRequestTitle = (req: Request): string => {
+    if (req.isTitled && req.title) {
+      return req.title
+    }
+    if (req.request.url) {
+      return req.request.url
+    }
+    return t('default.tab.title')
+  }
+
   return (
     <Box sx={{ display: 'flex', alignItems: 'center', bgcolor: 'background.paper' }}>
       <Tabs
@@ -69,78 +89,102 @@ export default function TabBar({
         scrollButtons="auto"
         sx={{ minHeight: 40 }}
       >
-        {tabs.map((t) => (
-          <Tab
-            key={t.id}
-            value={t.id}
-            label={
-              <Box
-                sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
-                draggable={editingId === null}
-                onDragStart={(e) => {
-                  if (editingId) {
-                    return
-                  }
-                  e.dataTransfer?.setData('text/plain', t.id)
-                  if (e.dataTransfer) {
-                    e.dataTransfer.effectAllowed = 'move'
-                  }
-                }}
-                onDragOver={(e) => {
-                  e.preventDefault()
-                  if (e.dataTransfer) {
-                    e.dataTransfer.dropEffect = 'move'
-                  }
-                }}
-                onDrop={(e) => {
-                  e.preventDefault()
-                  const fromId = e.dataTransfer?.getData('text/plain')
-                  if (fromId && fromId !== t.id) {
-                    onReorder?.(fromId, t.id)
-                  }
-                }}
-              >
-                {editingId === t.id ? (
-                  <TextField
+        {requests.map((req) => {
+          const method = (req.request.method || '').toString().toUpperCase()
+          const color = methodColors[method] || theme.palette.text.primary
+
+          return (
+            <Tab
+              key={req.id}
+              value={req.id}
+              label={
+                <Box
+                  sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+                  draggable={editingId === null}
+                  onDragStart={(e) => {
+                    if (editingId) {
+                      return
+                    }
+                    e.dataTransfer?.setData('text/plain', req.id)
+                    if (e.dataTransfer) {
+                      e.dataTransfer.effectAllowed = 'move'
+                    }
+                  }}
+                  onDragOver={(e) => {
+                    e.preventDefault()
+                    if (e.dataTransfer) {
+                      e.dataTransfer.dropEffect = 'move'
+                    }
+                  }}
+                  onDrop={(e) => {
+                    e.preventDefault()
+                    const fromId = e.dataTransfer?.getData('text/plain')
+                    if (fromId && fromId !== req.id) {
+                      onReorder?.(fromId, req.id)
+                    }
+                  }}
+                >
+                  <Chip
+                    label={req.request.method}
                     size="small"
-                    value={editTitle}
-                    autoFocus
-                    onChange={(e) => setEditTitle(e.target.value)}
-                    onBlur={commitEdit}
-                    onKeyDown={(e) => {
-                      switch (e.key) {
-                        case 'Enter':
-                          commitEdit()
-                          break
-                        case 'Escape':
-                          cancelEdit()
-                          break
-                      }
+                    sx={{
+                      minWidth: 44,
+                      backgroundColor: 'transparent',
+                      border: 'none',
+                      color: color,
+                      fontWeight: 800,
+                      textTransform: 'uppercase'
                     }}
-                    inputProps={{ style: { fontSize: 13 } }}
                   />
-                ) : (
-                  <Box
-                    sx={{ fontSize: 13, display: 'flex', alignItems: 'center', gap: 1 }}
-                    onDoubleClick={() => startEdit(t.id, t.title)}
-                  >
-                    <Box>{t.title}</Box>
-                    <IconButton
+                  {editingId === req.id ? (
+                    <TextField
                       size="small"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        onClose(t.id)
+                      value={editTitle}
+                      autoFocus
+                      onChange={(e) => setEditTitle(e.target.value)}
+                      onBlur={commitEdit}
+                      onKeyDown={(e) => {
+                        switch (e.key) {
+                          case 'Enter':
+                            commitEdit()
+                            break
+                          case 'Escape':
+                            cancelEdit()
+                            break
+                        }
+                      }}
+                      inputProps={{ style: { fontSize: 13 } }}
+                    />
+                  ) : (
+                    <Box
+                      sx={{ fontSize: 13, display: 'flex', alignItems: 'center', gap: 1 }}
+                      onDoubleClick={() => {
+                        const r = requests.find((x) => x.id === req.id)
+                        if (r?.isTitled && r.title) {
+                          startEdit(req.id, r.title)
+                        } else {
+                          startEdit(req.id, '')
+                        }
                       }}
                     >
-                      <CloseIcon fontSize="small" />
-                    </IconButton>
-                  </Box>
-                )}
-              </Box>
-            }
-            sx={{ alignItems: 'center', py: 0.5 }}
-          />
-        ))}
+                      <Box>{getRequestTitle(req)}</Box>
+                      <IconButton
+                        size="small"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          onClose(req.id)
+                        }}
+                      >
+                        <CloseIcon fontSize="small" />
+                      </IconButton>
+                    </Box>
+                  )}
+                </Box>
+              }
+              sx={{ alignItems: 'center', py: 0.5 }}
+            />
+          )
+        })}
       </Tabs>
 
       <Box sx={{ flex: 1 }} />
@@ -164,16 +208,16 @@ export default function TabBar({
         onClose={closeMenu}
         keepMounted
       >
-        {tabs.map((t) => (
+        {requests.map((req) => (
           <MenuItem
-            key={t.id}
-            selected={t.id === activeId}
+            key={req.id}
+            selected={req.id === activeId}
             onClick={() => {
-              onSelect(t.id)
+              onSelect(req.id)
               closeMenu()
             }}
           >
-            {t.title}
+            {getRequestTitle(req)}
           </MenuItem>
         ))}
       </Menu>
