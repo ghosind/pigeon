@@ -5,8 +5,8 @@ export type Lang = 'en' | 'zh'
 
 const STORAGE_KEY = 'pigeon:lang'
 
-import en from '../i18n/en'
-import zh from '../i18n/zh'
+import en from '../i18n/en.json'
+import zh from '../i18n/zh.json'
 
 const translations: Record<Lang, Record<string, string>> = {
   en,

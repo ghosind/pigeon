@@ -23,7 +23,8 @@
     "build:win": "npm run build && electron-builder --win",
     "build:mac": "electron-vite build && electron-builder --mac",
     "build:linux": "electron-vite build && electron-builder --linux",
-    "dist": "npm run build && electron-builder"
+    "dist": "npm run build && electron-builder",
+    "i18n:validate": "node ./scripts/i18n-check.js src/renderer/src/i18n"
   },
   "dependencies": {
     "@electron-toolkit/preload": "^3.0.2",
