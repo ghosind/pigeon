@@ -1,13 +1,16 @@
 import { createContext, useContext } from 'react'
-import { Request, RequestHistory } from '@shared/types'
+import { Request, RequestHistory, CollectionNode } from '@shared/types'
 
 export type OpenHandler = (req: Request, options?: { newTab?: boolean }) => void
 
 export type RequestManagerContextValue = {
-  collections: Request[]
+  collections: CollectionNode[]
   history: RequestHistory[]
-  addCollection: (c: Request) => void
-  removeCollection: (id: string) => void
+  addFolder: (title: string, parentId?: string | null) => void
+  addRequestToFolder: (parentId: string | null, c: Request) => void
+  removeNode: (id: string) => void
+  renameNode: (id: string, newName: string) => void
+  exportNode: (id: string) => void
   addHistory: (req: Request) => void
   clearHistory: () => void
   openRequest: (req: Request) => void

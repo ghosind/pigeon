@@ -42,6 +42,7 @@ const en = {
 
   'action.cancel': 'Cancel',
   'action.send': 'Send',
+  'action.save': 'Save',
   'addressbar.placeholder': 'Enter URL or paste text',
 
   'kv.key': 'Key',
@@ -54,7 +55,17 @@ const en = {
   'history.group.today': 'Today',
   'history.group.yesterday': 'Yesterday',
   'history.group.earlier': 'Earlier',
-  'history.empty': 'No history yet'
+  'history.empty': 'No history yet',
+  'collection.panel.collections': 'Collections',
+  'collection.panel.newFolder': 'New folder',
+  'collection.panel.newRequestRoot': 'New request (root)',
+  'collection.menu.newRequest': 'New Request',
+  'collection.menu.newFolder': 'New Folder',
+  'collection.menu.rename': 'Rename',
+  'collection.menu.export': 'Export',
+  'collection.menu.delete': 'Delete',
+  'collection.prompt.name': 'Collection name',
+  'collection.prompt.rename': 'Rename'
 }
 
 export default en

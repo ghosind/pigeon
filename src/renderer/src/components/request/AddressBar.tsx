@@ -2,6 +2,8 @@ import { useCallback, useEffect, useState } from 'react'
 import { Box, TextField, Select, MenuItem, Button, FormControl } from '@mui/material'
 import SendIcon from '@mui/icons-material/Send'
 import CancelIcon from '@mui/icons-material/Cancel'
+import SaveIcon from '@mui/icons-material/Save'
+import SaveToCollectionModal from '@renderer/components/collection/SaveToCollectionModal'
 import { useI18n } from '../../contexts/useI18n'
 import { KeyValuePair } from '@shared/types/kv'
 import { Request, HTTPMethod, HTTPRequest } from '@shared/types'
@@ -24,6 +26,7 @@ export default function AddressBar({
 }: AddressBarProps): React.ReactElement {
   const { t } = useI18n()
   const [isErr, setIsErr] = useState(false)
+  const [saveOpen, setSaveOpen] = useState(false)
 
   const handleChange = (value: Partial<HTTPRequest>): void => {
     onChange({ ...request, request: { ...request.request, ...value } })
@@ -125,6 +128,11 @@ export default function AddressBar({
           {t('action.send')}
         </Button>
       )}
+      <Button variant="outlined" startIcon={<SaveIcon />} onClick={() => setSaveOpen(true)}>
+        {t('action.save')}
+      </Button>
+
+      <SaveToCollectionModal open={saveOpen} onClose={() => setSaveOpen(false)} request={request} />
     </Box>
   )
 }

@@ -42,6 +42,7 @@ const zh = {
 
   'action.cancel': '取消',
   'action.send': '发送',
+  'action.save': '保存',
   'addressbar.placeholder': '输入 URL 或粘贴文本',
 
   'kv.key': '键',
@@ -53,7 +54,17 @@ const zh = {
   'history.group.today': '今天',
   'history.group.yesterday': '昨天',
   'history.group.earlier': '更早',
-  'history.empty': '暂无历史记录'
+  'history.empty': '暂无历史记录',
+  'collection.panel.collections': '收藏集',
+  'collection.panel.newFolder': '新建文件夹',
+  'collection.panel.newRequestRoot': '在根目录新建请求',
+  'collection.menu.newRequest': '新建请求',
+  'collection.menu.newFolder': '新建文件夹',
+  'collection.menu.rename': '重命名',
+  'collection.menu.export': '导出',
+  'collection.menu.delete': '删除',
+  'collection.prompt.name': '集合名称',
+  'collection.prompt.rename': '重命名'
 }
 
 export default zh
