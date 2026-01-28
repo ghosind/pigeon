@@ -16,6 +16,7 @@ import {
 import AddIcon from '@mui/icons-material/Add'
 import { useRequestManager } from '@renderer/contexts/useRequestManager'
 import { Request, CollectionNode } from '@shared/types'
+import useI18n from '@renderer/contexts/useI18n'
 
 type SaveToCollectionModalProps = {
   open: boolean
@@ -54,6 +55,7 @@ export default function SaveToCollectionModal({
   const { collections, addRequestToFolder, addFolder } = useRequestManager()
   const [selected, setSelected] = useState<string | null>(null)
   const [newFolderName, setNewFolderName] = useState('')
+  const { t } = useI18n()
 
   const handleSave = (): void => {
     addRequestToFolder(selected, request)
@@ -61,21 +63,19 @@ export default function SaveToCollectionModal({
   }
 
   const handleCreateFolder = (): void => {
-    if (!newFolderName.trim()) return
+    if (!newFolderName.trim()) {
+      return
+    }
     addFolder(newFolderName.trim(), selected || null)
     setNewFolderName('')
   }
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
-      <DialogTitle>Save to Collection</DialogTitle>
+      <DialogTitle>{t('collection.savemodal.title')}</DialogTitle>
       <DialogContent>
         <Stack spacing={2}>
           <List>
-            <ListItemButton onClick={() => setSelected(null)}>
-              <Radio checked={selected === null} />
-              <ListItemText primary="Root" />
-            </ListItemButton>
             {renderFolderNodes(collections, selected, setSelected)}
           </List>
 
@@ -83,21 +83,21 @@ export default function SaveToCollectionModal({
             <Stack direction="row" spacing={1} alignItems="center">
               <TextField
                 size="small"
-                label="New folder"
+                label={t('collection.newFolder')}
                 value={newFolderName}
                 onChange={(e) => setNewFolderName(e.target.value)}
               />
               <Button startIcon={<AddIcon />} onClick={handleCreateFolder}>
-                Create
+                {t('action.create')}
               </Button>
             </Stack>
           </Box>
         </Stack>
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose}>Cancel</Button>
+        <Button onClick={onClose}>{t('action.cancel')}</Button>
         <Button onClick={handleSave} variant="contained" color="primary">
-          Save
+          {t('action.save')}
         </Button>
       </DialogActions>
     </Dialog>

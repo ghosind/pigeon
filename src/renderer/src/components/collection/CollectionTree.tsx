@@ -1,6 +1,6 @@
 import React from 'react'
 import { CollectionNode, Request } from '@shared/types'
-import TreeNode from './CollectionTreeNode'
+import CollectionTreeNode from './CollectionTreeNode'
 
 type CollectionTreeProps = {
   nodes: CollectionNode[]
@@ -24,7 +24,7 @@ export default function CollectionTree({
   return (
     <>
       {nodes.map((n) => (
-        <TreeNode
+        <CollectionTreeNode
           key={n.id}
           node={n}
           level={0}

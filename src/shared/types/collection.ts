@@ -1,6 +1,6 @@
 import { Request } from './request'
 
-export type CollectionItem = {
+export type CollectionRequest = {
   id: string
   type: 'request'
   request: Request
@@ -13,7 +13,7 @@ export type CollectionFolder = {
   children: CollectionNode[]
 }
 
-export type CollectionNode = CollectionFolder | CollectionItem
+export type CollectionNode = CollectionFolder | CollectionRequest
 
 export interface Collections {
   nodes: CollectionNode[]

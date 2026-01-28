@@ -6,7 +6,7 @@ import DialogActions from '@mui/material/DialogActions'
 import TextField from '@mui/material/TextField'
 import Button from '@mui/material/Button'
 
-type Props = {
+type PromptDialogProps = {
   open: boolean
   title?: string
   defaultValue?: string
@@ -18,7 +18,7 @@ export default function PromptDialog({
   title = 'Input',
   defaultValue = '',
   onClose
-}: Props): React.JSX.Element {
+}: PromptDialogProps): React.JSX.Element {
   const inputRef = useRef<HTMLInputElement | null>(null)
 
   useEffect(() => {

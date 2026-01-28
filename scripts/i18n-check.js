@@ -25,9 +25,12 @@ for (const f of files) {
   maps[f] = readJson(p)
 }
 
-// gather union of keys
 const allKeys = new Set()
-for (const m of Object.values(maps)) for (const k of Object.keys(m)) allKeys.add(k)
+for (const m of Object.values(maps)) {
+  for (const k of Object.keys(m)) {
+    allKeys.add(k)
+  }
+}
 
 let missing = false
 for (const [fname, m] of Object.entries(maps)) {
@@ -35,7 +38,9 @@ for (const [fname, m] of Object.entries(maps)) {
   if (missingKeys.length) {
     missing = true
     console.error(`\nMissing keys in ${fname}:`)
-    for (const k of missingKeys) console.error('  ', k)
+    for (const k of missingKeys) {
+      console.error(', ', k)
+    }
   }
 }
 

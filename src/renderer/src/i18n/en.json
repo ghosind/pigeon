@@ -43,6 +43,7 @@
   "action.cancel": "Cancel",
   "action.send": "Send",
   "action.save": "Save",
+  "action.create": "Create",
   "addressbar.placeholder": "Enter URL or paste text",
 
   "kv.key": "Key",
@@ -56,14 +57,13 @@
   "history.group.yesterday": "Yesterday",
   "history.group.earlier": "Earlier",
   "history.empty": "No history yet",
+  "collection.newFolder": "New folder",
   "collection.panel.collections": "Collections",
-  "collection.panel.newFolder": "New folder",
-  "collection.panel.newRequestRoot": "New request (root)",
   "collection.menu.newRequest": "New Request",
-  "collection.menu.newFolder": "New Folder",
   "collection.menu.rename": "Rename",
   "collection.menu.export": "Export",
   "collection.menu.delete": "Delete",
   "collection.prompt.name": "Collection name",
-  "collection.prompt.rename": "Rename"
+  "collection.prompt.rename": "Rename",
+  "collection.savemodal.title": "Save to Collection"
 }

@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import * as uuid from 'uuid'
 import { Box, IconButton, List, Tooltip, useTheme, Paper } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
 import { useRequestManager } from '@renderer/contexts/useRequestManager'
@@ -6,7 +7,6 @@ import { useI18n } from '../../contexts/useI18n'
 import { HTTPMethod, Request, RequestType, CollectionNode } from '@shared/types'
 import CollectionTree from './CollectionTree'
 import PromptDialog from '../common/PromptDialog'
-import * as uuid from 'uuid'
 
 export default function CollectionPanel(): React.JSX.Element {
   const {
@@ -67,14 +67,20 @@ export default function CollectionPanel(): React.JSX.Element {
 
   const handleRenameClose = (value: string | null): void => {
     setRenameOpen(false)
-    if (!value || !renameTarget) return
+    if (!value || !renameTarget) {
+      return
+    }
     renameNode(renameTarget.id, value)
     setRenameTarget(null)
   }
 
-  const handleOpen = (req: Request): void => openRequest(req)
+  const handleOpen = (req: Request): void => {
+    openRequest(req)
+  }
 
-  const handleRemove = (id: string): void => removeNode(id)
+  const handleRemove = (id: string): void => {
+    removeNode(id)
+  }
 
   return (
     <Box
@@ -99,7 +105,7 @@ export default function CollectionPanel(): React.JSX.Element {
       >
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
           <Box sx={{ fontWeight: 600 }}>{t('collection.panel.collections')}</Box>
-          <Tooltip title={t('collection.panel.newFolder')}>
+          <Tooltip title={t('collection.newFolder')}>
             <IconButton size="small" onClick={handleAdd}>
               <AddIcon fontSize="small" />
             </IconButton>
