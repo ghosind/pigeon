@@ -4,6 +4,7 @@ import SendIcon from '@mui/icons-material/Send'
 import CancelIcon from '@mui/icons-material/Cancel'
 import SaveIcon from '@mui/icons-material/Save'
 import SaveToCollectionModal from '@renderer/components/collection/SaveToCollectionModal'
+import { useRequestManager } from '@renderer/contexts/useRequestManager'
 import { useI18n } from '../../contexts/useI18n'
 import { KeyValuePair } from '@shared/types/kv'
 import { Request, HTTPMethod, HTTPRequest } from '@shared/types'
@@ -27,6 +28,21 @@ export default function AddressBar({
   const { t } = useI18n()
   const [isErr, setIsErr] = useState(false)
   const [saveOpen, setSaveOpen] = useState(false)
+  const { collections, addRequestToFolder } = useRequestManager()
+
+  const existsInCollections = (id: string): boolean => {
+    const find = (nodes: any[]): boolean => {
+      for (const n of nodes) {
+        if (n.id === id) return true
+        if (n.type === 'folder' && n.children) {
+          if (find(n.children)) return true
+        }
+      }
+      return false
+    }
+
+    return find(collections)
+  }
 
   const handleChange = (value: Partial<HTTPRequest>): void => {
     onChange({ ...request, request: { ...request.request, ...value } })
@@ -128,11 +144,28 @@ export default function AddressBar({
           {t('action.send')}
         </Button>
       )}
-      <Button variant="outlined" startIcon={<SaveIcon />} onClick={() => setSaveOpen(true)}>
+      <Button
+        variant="outlined"
+        startIcon={<SaveIcon />}
+        onClick={() => {
+          if (request.isInCollection || (request.isInCollection === undefined && existsInCollections(request.id))) {
+            addRequestToFolder(null, request)
+            onChange({ ...request, isInCollection: true })
+            return
+          }
+
+          setSaveOpen(true)
+        }}
+      >
         {t('action.save')}
       </Button>
 
-      <SaveToCollectionModal open={saveOpen} onClose={() => setSaveOpen(false)} request={request} />
+      <SaveToCollectionModal
+        open={saveOpen}
+        onClose={() => setSaveOpen(false)}
+        request={request}
+        onSaved={(r) => onChange(r)}
+      />
     </Box>
   )
 }

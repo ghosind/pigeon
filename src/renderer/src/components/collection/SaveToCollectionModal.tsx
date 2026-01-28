@@ -22,6 +22,7 @@ type SaveToCollectionModalProps = {
   open: boolean
   onClose: () => void
   request: Request
+  onSaved?: (request: Request) => void
 }
 
 function renderFolderNodes(
@@ -50,7 +51,8 @@ function renderFolderNodes(
 export default function SaveToCollectionModal({
   open,
   onClose,
-  request
+  request,
+  onSaved
 }: SaveToCollectionModalProps): React.ReactElement {
   const { collections, addRequestToFolder, addFolder } = useRequestManager()
   const [selected, setSelected] = useState<string | null>(null)
@@ -59,6 +61,9 @@ export default function SaveToCollectionModal({
 
   const handleSave = (): void => {
     addRequestToFolder(selected, request)
+    if (onSaved) {
+      onSaved({ ...request, isInCollection: true })
+    }
     onClose()
   }
 

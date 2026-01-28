@@ -15,13 +15,16 @@ export type RequestManagerContextValue = {
   clearHistory: () => void
   openRequest: (req: Request) => void
   registerOpenHandler: (h: OpenHandler | null) => void
+  registerCollectionChangeHandler: (h: ((ids: string[]) => void) | null) => void
 }
 
 const RequestManagerContext = createContext<RequestManagerContextValue | null>(null)
 
 export function useRequestManager(): RequestManagerContextValue {
   const ctx = useContext(RequestManagerContext)
-  if (!ctx) throw new Error('useRequestManager must be used within RequestManagerProvider')
+  if (!ctx) {
+    throw new Error('useRequestManager must be used within RequestManagerProvider')
+  }
   return ctx
 }
 

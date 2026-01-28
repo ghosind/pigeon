@@ -30,6 +30,13 @@ export default function RequestPage(): React.JSX.Element {
     return () => requestManager.registerOpenHandler(null)
   }, [requestManager, activeId, requests])
 
+  React.useEffect(() => {
+    requestManager.registerCollectionChangeHandler((removedIds) => {
+      setRequests((ts) => ts.map((t) => (removedIds.includes(t.id) ? { ...t, isInCollection: false } : t)))
+    })
+    return () => requestManager.registerCollectionChangeHandler(null)
+  }, [requestManager])
+
   const addRequest = (): void => {
     const id = uuid.v4()
     const newReq: Request = {

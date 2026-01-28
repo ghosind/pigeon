@@ -46,6 +46,7 @@ export const RequestManagerProvider: React.FC<React.PropsWithChildren> = ({ chil
   const [collections, setCollections] = useState<CollectionNode[]>(() => loadCollections())
   const [history, setHistory] = useState<RequestHistory[]>(() => loadHistory())
   const openHandler = useRef<OpenHandler | null>(null)
+  const collectionChangeHandler = useRef<((ids: string[]) => void) | null>(null)
 
   useEffect(() => saveCollections(collections), [collections])
   useEffect(() => saveHistory(history), [history])
@@ -70,22 +71,42 @@ export const RequestManagerProvider: React.FC<React.PropsWithChildren> = ({ chil
   }
 
   const addRequestToFolder = (parentId: string | null, c: Request): void => {
-    const item: CollectionNode = { id: c.id, type: 'request', request: c }
-    if (!parentId) {
-      setCollections((s) => [...s, item])
-      return
-    }
+    const storedReq = { ...c, isInCollection: true }
+    const item: CollectionNode = { id: c.id, type: 'request', request: storedReq }
 
-    const insert = (nodes: CollectionNode[]): CollectionNode[] =>
+    let found = false
+    const update = (nodes: CollectionNode[]): CollectionNode[] =>
       nodes.map((n) => {
-        if (n.type === 'folder') {
-          if (n.id === parentId) return { ...n, children: [...n.children, item] }
-          return { ...n, children: insert(n.children) }
+        if (n.type === 'request') {
+          if (n.id === c.id) {
+            found = true
+            return { ...n, request: storedReq }
+          }
+          return n
         }
-        return n
+
+        return { ...n, children: update(n.children) }
       })
 
-    setCollections((s) => insert(s))
+    setCollections((s) => {
+      const updated = update(s)
+      if (found) return updated
+
+      if (!parentId) {
+        return [...s, item]
+      }
+
+      const insert = (nodes: CollectionNode[]): CollectionNode[] =>
+        nodes.map((n) => {
+          if (n.type === 'folder') {
+            if (n.id === parentId) return { ...n, children: [...n.children, item] }
+            return { ...n, children: insert(n.children) }
+          }
+          return n
+        })
+
+      return insert(s)
+    })
   }
 
   const removeNode = (id: string): void => {
@@ -94,19 +115,46 @@ export const RequestManagerProvider: React.FC<React.PropsWithChildren> = ({ chil
         .filter((n) => n.id !== id)
         .map((n) => (n.type === 'folder' ? { ...n, children: remove(n.children) } : n))
 
-    setCollections((s) => remove(s))
+    setCollections((s) => {
+      const newNodes = remove(s)
+
+      const collectRequestIds = (nodes: CollectionNode[], acc: string[] = []): string[] => {
+        for (const n of nodes) {
+          if (n.type === 'request') {
+            acc.push(n.id)
+          }
+          if (n.type === 'folder') {
+            collectRequestIds(n.children, acc)
+          }
+        }
+        return acc
+      }
+
+      const oldIds = collectRequestIds(s, [])
+      const newIds = collectRequestIds(newNodes, [])
+      const removedIds = oldIds.filter((x) => !newIds.includes(x))
+
+      if (removedIds.length && collectionChangeHandler.current) {
+        setTimeout(() => collectionChangeHandler.current && collectionChangeHandler.current(removedIds), 0)
+      }
+
+      return newNodes
+    })
   }
 
   const renameNode = (id: string, newName: string): void => {
     const rename = (nodes: CollectionNode[]): CollectionNode[] =>
       nodes.map((n) => {
         if (n.id === id) {
-          if (n.type === 'folder') return { ...n, title: newName }
-          // request
+          if (n.type === 'folder') {
+            return { ...n, title: newName }
+          }
           return { ...n, request: { ...n.request, title: newName } }
         }
 
-        if (n.type === 'folder') return { ...n, children: rename(n.children) }
+        if (n.type === 'folder') {
+          return { ...n, children: rename(n.children) }
+        }
         return n
       })
 
@@ -115,10 +163,14 @@ export const RequestManagerProvider: React.FC<React.PropsWithChildren> = ({ chil
 
   const findNode = (id: string, nodes: CollectionNode[]): CollectionNode | null => {
     for (const n of nodes) {
-      if (n.id === id) return n
+      if (n.id === id) {
+        return n
+      }
       if (n.type === 'folder') {
         const found = findNode(id, n.children)
-        if (found) return found
+        if (found) {
+          return found
+        }
       }
     }
     return null
@@ -127,7 +179,9 @@ export const RequestManagerProvider: React.FC<React.PropsWithChildren> = ({ chil
   const exportNode = (id: string): void => {
     try {
       const node = findNode(id, collections)
-      if (!node) return
+      if (!node) {
+        return
+      }
       const text = JSON.stringify(node, null, 2)
       const blob = new Blob([text], { type: 'application/json' })
       const url = URL.createObjectURL(blob)
@@ -173,6 +227,10 @@ export const RequestManagerProvider: React.FC<React.PropsWithChildren> = ({ chil
     openHandler.current = h
   }
 
+  const registerCollectionChangeHandler = (h: ((ids: string[]) => void) | null): void => {
+    collectionChangeHandler.current = h
+  }
+
   return (
     <RequestManagerContext.Provider
       value={{
@@ -186,7 +244,8 @@ export const RequestManagerProvider: React.FC<React.PropsWithChildren> = ({ chil
         addHistory,
         clearHistory,
         openRequest,
-        registerOpenHandler
+          registerOpenHandler,
+          registerCollectionChangeHandler
       }}
     >
       {children}

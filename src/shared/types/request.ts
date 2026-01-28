@@ -8,6 +8,7 @@ export interface Request {
   id: string
   title?: string
   isTitled?: boolean
+  isInCollection?: boolean
   type: RequestType
   request: HTTPRequest
   response?: HTTPResponse
