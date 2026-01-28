@@ -2,6 +2,7 @@ import React from 'react'
 import { Box, Tabs, Tab } from '@mui/material'
 import { useI18n } from '../../contexts/useI18n'
 import KeyValueEditor from './KeyValueEditor'
+import AuthorizationEditor from './AuthorizationEditor'
 import BodyEditor from './BodyEditor'
 import { Request, HTTPRequest } from '@shared/types'
 import { Url } from '@shared/utils/url'
@@ -62,6 +63,7 @@ export default function RequestArea({ request, onChange }: RequestAreaProps): Re
       >
         <Tab label={t('request.tab.params')} />
         <Tab label={t('request.tab.headers')} />
+        <Tab label={t('request.tab.auth')} />
         <Tab label={t('request.tab.body')} />
       </Tabs>
 
@@ -72,7 +74,13 @@ export default function RequestArea({ request, onChange }: RequestAreaProps): Re
         {tab === 1 && (
           <KeyValueEditor rows={request?.request.headers || []} onChange={onHeadersChange} />
         )}
-        {tab === 2 && <BodyEditor body={request?.request.body} onChange={onBodyChange} />}
+        {tab === 2 && (
+          <AuthorizationEditor
+            headers={request?.request.headers || []}
+            onChange={onHeadersChange}
+          />
+        )}
+        {tab === 3 && <BodyEditor body={request?.request.body} onChange={onBodyChange} />}
       </Box>
     </Box>
   )

@@ -38,7 +38,16 @@
   "request.body.noneNotice": "此请求没有请求体。",
   "request.tab.params": "参数",
   "request.tab.headers": "头部",
+  "request.tab.auth": "鉴权",
   "request.tab.body": "正文",
+
+  "request.auth.title": "鉴权",
+  "request.auth.none": "无鉴权",
+  "request.auth.basic": "Basic 鉴权",
+  "request.auth.bearer": "Bearer Token",
+  "request.auth.username": "用户名",
+  "request.auth.password": "密码",
+  "request.auth.token": "Token",
 
   "action.cancel": "取消",
   "action.send": "发送",

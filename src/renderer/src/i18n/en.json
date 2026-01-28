@@ -38,7 +38,16 @@
   "request.body.noneNotice": "No request body for this request.",
   "request.tab.params": "Params",
   "request.tab.headers": "Headers",
+  "request.tab.auth": "Authorization",
   "request.tab.body": "Body",
+
+  "request.auth.title": "Authorization",
+  "request.auth.none": "No Auth",
+  "request.auth.basic": "Basic Auth",
+  "request.auth.bearer": "Bearer Token",
+  "request.auth.username": "Username",
+  "request.auth.password": "Password",
+  "request.auth.token": "Token",
 
   "action.cancel": "Cancel",
   "action.send": "Send",

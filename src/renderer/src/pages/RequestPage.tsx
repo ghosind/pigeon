@@ -32,7 +32,9 @@ export default function RequestPage(): React.JSX.Element {
 
   React.useEffect(() => {
     requestManager.registerCollectionChangeHandler((removedIds) => {
-      setRequests((ts) => ts.map((t) => (removedIds.includes(t.id) ? { ...t, isInCollection: false } : t)))
+      setRequests((ts) =>
+        ts.map((t) => (removedIds.includes(t.id) ? { ...t, isInCollection: false } : t))
+      )
     })
     return () => requestManager.registerCollectionChangeHandler(null)
   }, [requestManager])

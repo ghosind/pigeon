@@ -80,9 +80,7 @@ export default function SaveToCollectionModal({
       <DialogTitle>{t('collection.savemodal.title')}</DialogTitle>
       <DialogContent>
         <Stack spacing={2}>
-          <List>
-            {renderFolderNodes(collections, selected, setSelected)}
-          </List>
+          <List>{renderFolderNodes(collections, selected, setSelected)}</List>
 
           <Box>
             <Stack direction="row" spacing={1} alignItems="center">

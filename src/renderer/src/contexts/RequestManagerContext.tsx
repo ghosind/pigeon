@@ -135,7 +135,10 @@ export const RequestManagerProvider: React.FC<React.PropsWithChildren> = ({ chil
       const removedIds = oldIds.filter((x) => !newIds.includes(x))
 
       if (removedIds.length && collectionChangeHandler.current) {
-        setTimeout(() => collectionChangeHandler.current && collectionChangeHandler.current(removedIds), 0)
+        setTimeout(
+          () => collectionChangeHandler.current && collectionChangeHandler.current(removedIds),
+          0
+        )
       }
 
       return newNodes
@@ -244,8 +247,8 @@ export const RequestManagerProvider: React.FC<React.PropsWithChildren> = ({ chil
         addHistory,
         clearHistory,
         openRequest,
-          registerOpenHandler,
-          registerCollectionChangeHandler
+        registerOpenHandler,
+        registerCollectionChangeHandler
       }}
     >
       {children}

@@ -7,7 +7,7 @@ import SaveToCollectionModal from '@renderer/components/collection/SaveToCollect
 import { useRequestManager } from '@renderer/contexts/useRequestManager'
 import { useI18n } from '../../contexts/useI18n'
 import { KeyValuePair } from '@shared/types/kv'
-import { Request, HTTPMethod, HTTPRequest } from '@shared/types'
+import { Request, HTTPMethod, HTTPRequest, CollectionNode } from '@shared/types'
 import { Url } from '@shared/utils/url'
 
 type AddressBarProps = {
@@ -31,7 +31,7 @@ export default function AddressBar({
   const { collections, addRequestToFolder } = useRequestManager()
 
   const existsInCollections = (id: string): boolean => {
-    const find = (nodes: any[]): boolean => {
+    const find = (nodes: CollectionNode[]): boolean => {
       for (const n of nodes) {
         if (n.id === id) return true
         if (n.type === 'folder' && n.children) {
@@ -148,7 +148,10 @@ export default function AddressBar({
         variant="outlined"
         startIcon={<SaveIcon />}
         onClick={() => {
-          if (request.isInCollection || (request.isInCollection === undefined && existsInCollections(request.id))) {
+          if (
+            request.isInCollection ||
+            (request.isInCollection === undefined && existsInCollections(request.id))
+          ) {
             addRequestToFolder(null, request)
             onChange({ ...request, isInCollection: true })
             return
