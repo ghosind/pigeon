@@ -174,7 +174,7 @@ export default function TabBar({
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
                           whiteSpace: 'nowrap',
-                          width: 100,
+                          width: 100
                         }}
                         title={requestTitle}
                       >

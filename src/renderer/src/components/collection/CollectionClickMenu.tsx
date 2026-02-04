@@ -31,20 +31,7 @@ export default function CollectionClickMenu({
   onExport,
   onCloseMenu
 }: CollectionClickMenuProps): React.JSX.Element {
-  // const [anchor, setAnchor] = useState<null | { x: number; y: number }>(null)
-  // const [menuOpenNodeId, setMenuOpenNodeId] = useState<string | null>(null)
   const { t } = useI18n()
-
-  // const openMenu = (e: React.MouseEvent, id: string): void => {
-  //   e.preventDefault()
-  //   setMenuOpenNodeId(id)
-  //   setAnchor({ x: e.clientX, y: e.clientY })
-  // }
-
-  // const closeMenu = (): void => {
-  //   setAnchor(null)
-  //   setMenuOpenNodeId(null)
-  // }
 
   return (
     <Menu

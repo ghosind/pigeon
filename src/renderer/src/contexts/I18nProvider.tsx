@@ -20,8 +20,8 @@ export const I18nProvider: React.FC<React.PropsWithChildren<Record<string, unkno
     try {
       const v = (localStorage.getItem(STORAGE_KEY) as Lang) || undefined
       if (v) return v
-    } catch {
-      // ignore localStorage errors
+    } catch (err) {
+      console.error('Failed to get language from localStorage:', err)
     }
     if (typeof navigator !== 'undefined' && navigator.language?.startsWith('zh')) return 'zh'
     return 'en'
@@ -30,8 +30,8 @@ export const I18nProvider: React.FC<React.PropsWithChildren<Record<string, unkno
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEY, lang)
-    } catch {
-      // ignore localStorage errors
+    } catch (err) {
+      console.error('Failed to set language to localStorage:', err)
     }
   }, [lang])
 

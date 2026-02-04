@@ -1,4 +1,3 @@
-// ipc/index.ts
 import { IpcMain } from 'electron'
 import { registerRequestHandlers } from './handlers/http'
 

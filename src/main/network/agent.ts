@@ -1,4 +1,3 @@
-// agent.ts
 import { Agent, ProxyAgent } from 'undici'
 import { HTTPProxyConfig, HTTPTLSConfig } from '@shared/types'
 
