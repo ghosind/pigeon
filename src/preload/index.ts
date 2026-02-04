@@ -1,11 +1,12 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
-import { IPC_REQUEST_ABORT, IPC_REQUEST_SEND } from '@shared/constants/channels'
+import { IPC_REQUEST_ABORT, IPC_REQUEST_SEND, IPC_OPEN_FILE } from '@shared/constants/channels'
 import { HTTPRequest } from '@shared/types'
 
 const api = {
   sendRequest: (id: string, req: HTTPRequest) => ipcRenderer.invoke(IPC_REQUEST_SEND, id, req),
-  abortRequest: (id: string) => ipcRenderer.invoke(IPC_REQUEST_ABORT, id)
+  abortRequest: (id: string) => ipcRenderer.invoke(IPC_REQUEST_ABORT, id),
+  openFileDialog: () => ipcRenderer.invoke(IPC_OPEN_FILE)
 }
 
 if (process.contextIsolated) {

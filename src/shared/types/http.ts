@@ -10,8 +10,8 @@ export enum HTTPMethod {
   OPTIONS = 'OPTIONS'
 }
 
-export type HTTPBodyMode = 'none' | 'raw' | 'form' | 'urlencoded'
-export type HTTPContentType = 'json' | 'xml' | 'form' | 'urlencoded' | 'text'
+export type HTTPBodyMode = 'none' | 'raw' | 'form' | 'urlencoded' | 'binary'
+export type HTTPContentType = 'json' | 'xml' | 'form' | 'urlencoded' | 'text' | string
 
 export type HTTPBody = {
   mode: HTTPBodyMode
@@ -19,6 +19,7 @@ export type HTTPBody = {
   data?: string
   form?: KeyValuePair[]
   urlencoded?: KeyValuePair[]
+  filePath?: string
 }
 
 export interface HTTPProxyConfig {

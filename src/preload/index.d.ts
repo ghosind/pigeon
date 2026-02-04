@@ -4,6 +4,7 @@ import { HTTPRequest, HTTPResponse } from '@shared/types'
 interface RequestAPI {
   sendRequest: (id: string, req: HTTPRequest) => Promise<HTTPResponse>
   abortRequest: (id: string) => Promise<unknown>
+  openFileDialog: () => Promise<string | null>
 }
 
 declare global {

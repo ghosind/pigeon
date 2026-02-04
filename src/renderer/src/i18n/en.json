@@ -31,6 +31,7 @@
   "request.mode.raw": "Raw",
   "request.mode.form": "Form Data",
   "request.mode.urlencoded": "x-www-form-urlencoded",
+  "request.mode.binary": "Binary",
   "request.raw.json": "JSON",
   "request.raw.xml": "XML",
   "request.raw.text": "Text",
@@ -40,6 +41,7 @@
   "request.tab.headers": "Headers",
   "request.tab.auth": "Authorization",
   "request.tab.body": "Body",
+  "request.binary.select": "Select File",
 
   "request.auth.title": "Authorization",
   "request.auth.none": "No Auth",

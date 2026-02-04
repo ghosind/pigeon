@@ -1,5 +1,5 @@
 import React from 'react'
-import { Box, Typography } from '@mui/material'
+import { Box, Typography, Button } from '@mui/material'
 import { useI18n } from '../../contexts/useI18n'
 import ModeSelect from './ModeSelect'
 import RawEditor from '@renderer/components/common/RawEditor'
@@ -13,11 +13,12 @@ type BodyEditorProps = {
   onChange: (b: HTTPBody) => void
 }
 
-const ContentTypeMap: Record<HTTPBodyMode, HTTPContentType> = {
+const ContentTypeMap: Record<HTTPBodyMode, HTTPContentType | ''> = {
   raw: 'json',
   form: 'form',
   urlencoded: 'urlencoded',
-  none: 'text'
+  none: 'text',
+  binary: ''
 }
 
 export default function BodyEditor({ body, onChange }: BodyEditorProps): React.ReactElement {
@@ -46,12 +47,12 @@ export default function BodyEditor({ body, onChange }: BodyEditorProps): React.R
 
   const handleModeChange = (m: HTTPBodyMode): void => {
     const prev = body ?? ({ mode: m } as HTTPBody)
-    let contentType = ContentTypeMap[m]
+    let contentType: HTTPContentType | '' = ContentTypeMap[m]
     if (m === 'raw') {
       contentType = language
     }
 
-    const next: HTTPBody = { ...prev, mode: m, contentType }
+    const next: HTTPBody = { ...prev, mode: m, contentType: contentType || undefined }
     setMode(m)
     onChange(next)
   }
@@ -60,6 +61,19 @@ export default function BodyEditor({ body, onChange }: BodyEditorProps): React.R
     setLanguage(lang)
     const prev = body ?? ({ mode: 'raw' } as HTTPBody)
     onChange({ ...prev, mode: 'raw', contentType: lang })
+  }
+
+  const handleFileSelect = async (): Promise<void> => {
+    try {
+      const path: string | null = await window.api.openFileDialog()
+      if (!path) {
+        return
+      }
+      const prev = body ?? ({ mode: 'binary' } as HTTPBody)
+      onChange({ ...prev, mode: 'binary', filePath: path })
+    } catch (e) {
+      console.error('open file dialog failed', e)
+    }
   }
 
   return (
@@ -85,6 +99,17 @@ export default function BodyEditor({ body, onChange }: BodyEditorProps): React.R
             onChange={updateRaw}
             language={language}
           />
+        )}
+
+        {mode === 'binary' && (
+          <Box sx={{ p: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Button size="small" onClick={handleFileSelect}>
+              {t('request.binary.select')}
+            </Button>
+            <Typography variant="body2" sx={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {body?.filePath || ''}
+            </Typography>
+          </Box>
         )}
 
         {mode === 'none' && (

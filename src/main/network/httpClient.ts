@@ -3,6 +3,7 @@ import { STATUS_CODES } from 'http'
 import { HTTPContentType, HTTPMethod, HTTPRequest, HTTPResponse, KeyValuePair } from '@shared/types'
 import { createAgent } from './agent'
 import { normalizeError } from './error'
+import { promises as fs } from 'fs'
 
 const keyValuePairsToFormData = (pairs: KeyValuePair[]): FormData => {
   const formData = new FormData()
@@ -56,11 +57,12 @@ const setContentType = (headers: Headers, contentType?: HTTPContentType): void =
   }
 }
 
-const buildRequestOptions = (
+const buildRequestOptions = async (
   req: HTTPRequest
-): Omit<Dispatcher.RequestOptions<null>, 'origin' | 'path' | 'method'> &
-  Dispatcher.DispatchOptions => {
-  let body: string | FormData | undefined = undefined
+): Promise<
+  Omit<Dispatcher.RequestOptions<null>, 'origin' | 'path' | 'method'> & Dispatcher.DispatchOptions
+> => {
+  let body: string | FormData | Buffer | Uint8Array<ArrayBuffer> | undefined = undefined
   const headers = buildHeaders(req.headers)
 
   if (req.method !== HTTPMethod.GET) {
@@ -84,6 +86,22 @@ const buildRequestOptions = (
         body = keyValuePairsToFormData(req.body.form || [])
         setContentType(headers, 'form')
         break
+      case 'binary': {
+        const path = req.body?.filePath
+        if (path) {
+          try {
+            const buf = await fs.readFile(path)
+            body = buf
+            if (!headers.has('content-type')) {
+              headers.set('content-type', 'application/octet-stream')
+            }
+          } catch (e) {
+            console.error('Failed to read file for request body:', e)
+            body = ''
+          }
+        }
+        break
+      }
     }
   }
 
@@ -103,7 +121,7 @@ export async function sendHttpRequest(
 ): Promise<HTTPResponse> {
   const start = Date.now()
   const dispatcher = createAgent(req.proxy, req.tls)
-  const options = buildRequestOptions(req)
+  const options = await buildRequestOptions(req)
   let { url } = req
   if (!/^https?:\/\//i.test(url)) {
     url = `http://${url}`

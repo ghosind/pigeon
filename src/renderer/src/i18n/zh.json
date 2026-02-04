@@ -31,6 +31,7 @@
   "request.mode.raw": "原始",
   "request.mode.form": "表单数据",
   "request.mode.urlencoded": "x-www-form-urlencoded",
+  "request.mode.binary": "二进制",
   "request.raw.json": "JSON",
   "request.raw.xml": "XML",
   "request.raw.text": "文本",
@@ -40,6 +41,7 @@
   "request.tab.headers": "头部",
   "request.tab.auth": "鉴权",
   "request.tab.body": "正文",
+  "request.binary.select": "选择文件",
 
   "request.auth.title": "鉴权",
   "request.auth.none": "无鉴权",

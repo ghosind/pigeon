@@ -20,6 +20,7 @@ export default function ModeSelect({ mode, onChange }: ModeSelectProps): React.R
         <MenuItem value="raw">{t('request.mode.raw')}</MenuItem>
         <MenuItem value="form">{t('request.mode.form')}</MenuItem>
         <MenuItem value="urlencoded">{t('request.mode.urlencoded')}</MenuItem>
+        <MenuItem value="binary">{t('request.mode.binary')}</MenuItem>
       </Select>
     </Box>
   )
