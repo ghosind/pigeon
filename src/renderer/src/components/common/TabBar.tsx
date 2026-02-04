@@ -93,6 +93,8 @@ export default function TabBar({
           const method = (req.request.method || '').toString().toUpperCase()
           const color = methodColors[method] || theme.palette.text.primary
 
+          const requestTitle = getRequestTitle(req)
+
           return (
             <Tab
               key={req.id}
@@ -167,7 +169,17 @@ export default function TabBar({
                         }
                       }}
                     >
-                      <Box>{getRequestTitle(req)}</Box>
+                      <Box
+                        sx={{
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                          width: 100,
+                        }}
+                        title={requestTitle}
+                      >
+                        {requestTitle}
+                      </Box>
                       <IconButton
                         size="small"
                         onClick={(e) => {
