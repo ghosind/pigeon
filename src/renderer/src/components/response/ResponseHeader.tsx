@@ -7,14 +7,19 @@ type ResponseHeaderProps = {
   response?: HTTPResponse
   panel: string
   setPanel: (p: string) => void
+  language?: string
+  setLanguage: (lang: string) => void
 }
 
 export default function ResponseHeader({
   response,
   panel,
-  setPanel
+  setPanel,
+  language,
+  setLanguage
 }: ResponseHeaderProps): React.ReactElement | null {
   const { t } = useI18n()
+
   if (!response) {
     return (
       <Box sx={{ mb: 1, p: 1 }}>
@@ -38,6 +43,17 @@ export default function ResponseHeader({
             <MenuItem value="headers">{t('response.tab.headers')}</MenuItem>
           </Select>
         </FormControl>
+
+        {panel === 'body' && (
+          <FormControl size="small" sx={{ ml: 2, minWidth: 100 }} variant="standard">
+            <Select value={language} onChange={(e) => setLanguage(e.target.value as string)}>
+              <MenuItem value="json">JSON</MenuItem>
+              <MenuItem value="xml">XML</MenuItem>
+              <MenuItem value="html">HTML</MenuItem>
+              <MenuItem value="text">Text</MenuItem>
+            </Select>
+          </FormControl>
+        )}
 
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <Typography variant="body2">{t('response.header.status')}</Typography>
