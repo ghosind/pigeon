@@ -13,7 +13,8 @@
   "language.option.zh": "简体中文",
   "layout.settings.tooltip": "Settings",
 
-  "default.tab.title": "Untitled Request",
+  "request.name.untitled": "Untitled Request",
+  "request.name.new": "New Request",
   "tabbar.addTab": "New Tab",
 
   "response.header.title": "Response",

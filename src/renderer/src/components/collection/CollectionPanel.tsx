@@ -72,12 +72,11 @@ export default function CollectionPanel(): React.JSX.Element {
     const newReq: Request = {
       type: RequestType.HTTP,
       id: uuid.v4(),
-      title: 'New Request',
+      title: t('request.name.new'),
       isTitled: true,
       request: { method: HTTPMethod.GET, url: '' }
     }
     addRequestToFolder(parentId, newReq)
-    openRequest(newReq)
   }
 
   const handleEditNode = (node: CollectionNode): void => {

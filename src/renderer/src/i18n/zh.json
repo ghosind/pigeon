@@ -13,7 +13,8 @@
   "language.option.zh": "简体中文",
   "layout.settings.tooltip": "设置",
 
-  "default.tab.title": "未命名请求",
+  "request.name.untitled": "未命名请求",
+  "request.name.new": "新请求",
   "tabbar.addTab": "新建标签页",
 
   "response.header.title": "响应",

@@ -77,7 +77,7 @@ export default function TabBar({
     if (req.request.url) {
       return req.request.url
     }
-    return t('default.tab.title')
+    return t('request.name.untitled')
   }
 
   return (
