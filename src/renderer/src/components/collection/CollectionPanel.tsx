@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import * as uuid from 'uuid'
-import { Box, IconButton, List, Tooltip, useTheme, Paper } from '@mui/material'
+import { Box, IconButton, List, Tooltip, useTheme, Paper, TextField } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
 import { useRequestManager } from '@renderer/contexts/useRequestManager'
 import { useI18n } from '../../contexts/useI18n'
@@ -38,6 +38,35 @@ export default function CollectionPanel(): React.JSX.Element {
 
   const [renameOpen, setRenameOpen] = useState(false)
   const [renameTarget, setRenameTarget] = useState<CollectionNode | null>(null)
+  const [search, setSearch] = useState('')
+
+  const filterNodes = (nodes: CollectionNode[], q: string): CollectionNode[] => {
+    if (!q) return nodes
+    const lower = q.toLowerCase()
+
+    const res: CollectionNode[] = []
+    for (const n of nodes) {
+      if (n.type === 'folder') {
+        const title = n.title || ''
+        if (title.toLowerCase().includes(lower)) {
+          res.push(n)
+          continue
+        }
+
+        const children = filterNodes(n.children || [], q)
+        if (children.length > 0) {
+          res.push({ ...n, children })
+        }
+      } else {
+        const title = n.request?.title || ''
+        if (title.toLowerCase().includes(lower)) {
+          res.push(n)
+        }
+      }
+    }
+
+    return res
+  }
 
   const handleAddRequestTo = (parentId: string | null): void => {
     const newReq: Request = {
@@ -104,7 +133,15 @@ export default function CollectionPanel(): React.JSX.Element {
         }}
       >
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
-          <Box sx={{ fontWeight: 600 }}>{t('collection.panel.collections')}</Box>
+          <Box sx={{ flex: 1, mr: 1 }}>
+            <TextField
+              size="small"
+              fullWidth
+              placeholder={t('collection.panel.search')}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </Box>
           <Tooltip title={t('collection.newFolder')}>
             <IconButton size="small" onClick={handleAdd}>
               <AddIcon fontSize="small" />
@@ -120,7 +157,7 @@ export default function CollectionPanel(): React.JSX.Element {
 
         <List sx={{ flex: 1, overflow: 'auto', background: 'transparent' }}>
           <CollectionTree
-            nodes={collections || []}
+            nodes={filterNodes(collections || [], search)}
             onOpenRequest={handleOpen}
             onRemove={handleRemove}
             onAddRequest={handleAddRequestTo}
