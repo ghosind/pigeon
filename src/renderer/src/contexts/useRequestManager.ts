@@ -1,8 +1,11 @@
 import { createContext, useContext } from 'react'
 import { Request, RequestHistory, CollectionNode } from '@shared/types'
 
-export type OpenHandler = (req: Request, options?: { newTab?: boolean }) => void
-
+export type OpenRequestOptions = {
+  newTab?: boolean
+  active?: boolean
+}
+export type OpenHandler = (req: Request, options?: OpenRequestOptions) => void
 export type RequestManagerContextValue = {
   collections: CollectionNode[]
   history: RequestHistory[]
@@ -13,7 +16,7 @@ export type RequestManagerContextValue = {
   exportNode: (id: string) => void
   addHistory: (req: Request) => void
   clearHistory: () => void
-  openRequest: (req: Request) => void
+  openRequest: (req: Request, options?: OpenRequestOptions) => void
   registerOpenHandler: (h: OpenHandler | null) => void
   registerCollectionChangeHandler: (h: ((ids: string[]) => void) | null) => void
 }

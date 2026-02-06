@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import * as uuid from 'uuid'
 import { Request, RequestHistory, CollectionNode } from '@shared/types'
-import { RequestManagerContext, OpenHandler } from './useRequestManager'
+import { RequestManagerContext, OpenHandler, OpenRequestOptions } from './useRequestManager'
 
 const KEY_COLLECTIONS = 'pigeon:collections'
 const KEY_HISTORY = 'pigeon:history'
@@ -152,7 +152,9 @@ export const RequestManagerProvider: React.FC<React.PropsWithChildren> = ({ chil
           if (n.type === 'folder') {
             return { ...n, title: newName }
           }
-          return { ...n, request: { ...n.request, title: newName } }
+          const req = { ...n.request, title: newName }
+          openRequest(req, { newTab: false, active: false })
+          return { ...n, request: req }
         }
 
         if (n.type === 'folder') {
@@ -215,7 +217,7 @@ export const RequestManagerProvider: React.FC<React.PropsWithChildren> = ({ chil
     })
   }
 
-  const openRequest = (req: Request, opts?: { newTab?: boolean }): void => {
+  const openRequest = (req: Request, opts?: OpenRequestOptions): void => {
     if (openHandler.current) {
       openHandler.current(req, opts)
     }

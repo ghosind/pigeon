@@ -4,7 +4,7 @@ import { Box } from '@mui/material'
 import TabBar from '@renderer/components/common/TabBar'
 import RequestPanel from '@renderer/components/common/RequestPanel'
 import { HTTPMethod, Request, RequestType } from '@shared/types'
-import { useRequestManager } from '@renderer/contexts/useRequestManager'
+import { OpenRequestOptions, useRequestManager } from '@renderer/contexts/useRequestManager'
 
 export default function RequestPage(): React.JSX.Element {
   const requestManager = useRequestManager()
@@ -19,13 +19,17 @@ export default function RequestPage(): React.JSX.Element {
   const sendingRef = React.useRef<Record<string, boolean>>({})
 
   React.useEffect(() => {
-    requestManager.registerOpenHandler((req) => {
+    requestManager.registerOpenHandler((req: Request, opts?: OpenRequestOptions) => {
       const id = req.id || uuid.v4()
       const exists = requests.find((t) => t.id === id)
-      if (!exists) {
+      if (!exists && (opts?.newTab ?? true)) {
         setRequests((s) => [...s, req])
+      } else {
+        setRequests((s) => s.map((t) => (t.id === id ? req : t)))
       }
-      setActiveId(id)
+      if (opts?.active ?? true) {
+        setActiveId(id)
+      }
     })
     return () => requestManager.registerOpenHandler(null)
   }, [requestManager, activeId, requests])
