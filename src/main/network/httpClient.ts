@@ -1,6 +1,6 @@
 import { request, Dispatcher, FormData, Headers } from 'undici'
 import { STATUS_CODES } from 'http'
-import { HTTPContentType, HTTPMethod, HTTPRequest, HTTPResponse, KeyValuePair } from '@shared/types'
+import { HTTPContentType, HTTPRequest, HTTPResponse, KeyValuePair } from '@shared/types'
 import { createAgent } from './agent'
 import { normalizeError } from './error'
 import { promises as fs } from 'fs'
@@ -65,43 +65,41 @@ const buildRequestOptions = async (
   let body: string | FormData | Buffer | Uint8Array<ArrayBuffer> | undefined = undefined
   const headers = buildHeaders(req.headers)
 
-  if (req.method !== HTTPMethod.GET) {
-    switch (req.body?.mode) {
-      case 'raw':
-        body = req.body.data || ''
-        setContentType(headers, req.body.contentType)
-        break
-      case 'urlencoded': {
-        const urlSearchParams = new URLSearchParams()
-        for (const pair of req.body.urlencoded || []) {
-          if (pair.enabled !== false && pair.key) {
-            urlSearchParams.append(pair.key, pair.value || '')
-          }
+  switch (req.body?.mode) {
+    case 'raw':
+      body = req.body.data || ''
+      setContentType(headers, req.body.contentType)
+      break
+    case 'urlencoded': {
+      const urlSearchParams = new URLSearchParams()
+      for (const pair of req.body.urlencoded || []) {
+        if (pair.enabled !== false && pair.key) {
+          urlSearchParams.append(pair.key, pair.value || '')
         }
-        body = urlSearchParams.toString()
-        setContentType(headers, 'urlencoded')
-        break
       }
-      case 'form':
-        body = keyValuePairsToFormData(req.body.form || [])
-        setContentType(headers, 'form')
-        break
-      case 'binary': {
-        const path = req.body?.filePath
-        if (path) {
-          try {
-            const buf = await fs.readFile(path)
-            body = buf
-            if (!headers.has('content-type')) {
-              headers.set('content-type', 'application/octet-stream')
-            }
-          } catch (e) {
-            console.error('Failed to read file for request body:', e)
-            body = ''
+      body = urlSearchParams.toString()
+      setContentType(headers, 'urlencoded')
+      break
+    }
+    case 'form':
+      body = keyValuePairsToFormData(req.body.form || [])
+      setContentType(headers, 'form')
+      break
+    case 'binary': {
+      const path = req.body?.filePath
+      if (path) {
+        try {
+          const buf = await fs.readFile(path)
+          body = buf
+          if (!headers.has('content-type')) {
+            headers.set('content-type', 'application/octet-stream')
           }
+        } catch (e) {
+          console.error('Failed to read file for request body:', e)
+          body = ''
         }
-        break
       }
+      break
     }
   }
 
