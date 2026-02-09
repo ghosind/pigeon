@@ -13,6 +13,13 @@ export enum HTTPMethod {
 export type HTTPBodyMode = 'none' | 'raw' | 'form' | 'urlencoded' | 'binary'
 export type HTTPContentType = 'json' | 'xml' | 'form' | 'urlencoded' | 'text' | string
 
+export type HTTPAuthorization = {
+  type: 'none' | 'basic' | 'bearer'
+  username?: string
+  password?: string
+  token?: string
+}
+
 export type HTTPBody = {
   mode: HTTPBodyMode
   contentType?: HTTPContentType
@@ -38,6 +45,7 @@ export interface HTTPTLSConfig {
 export interface HTTPRequest {
   method?: HTTPMethod
   url: string
+  auth?: HTTPAuthorization
   headers?: KeyValuePair[]
   params?: KeyValuePair[]
   body?: HTTPBody

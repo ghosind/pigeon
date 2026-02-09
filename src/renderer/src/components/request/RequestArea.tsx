@@ -16,6 +16,10 @@ export default function RequestArea({ request, onChange }: RequestAreaProps): Re
   const [tab, setTab] = React.useState(0)
   const { t } = useI18n()
 
+  const onRequestChange = (req: Partial<HTTPRequest>): void => {
+    onChange({ ...request, request: { ...request.request, ...req } })
+  }
+
   const onParamsChange = (params: HTTPRequest['params']): void => {
     const { url } = request?.request || {}
     const urlObj = new Url(url || '')
@@ -74,12 +78,7 @@ export default function RequestArea({ request, onChange }: RequestAreaProps): Re
         {tab === 1 && (
           <KeyValueEditor rows={request?.request.headers || []} onChange={onHeadersChange} />
         )}
-        {tab === 2 && (
-          <AuthorizationEditor
-            headers={request?.request.headers || []}
-            onChange={onHeadersChange}
-          />
-        )}
+        {tab === 2 && <AuthorizationEditor request={request?.request} onChange={onRequestChange} />}
         {tab === 3 && <BodyEditor body={request?.request.body} onChange={onBodyChange} />}
       </Box>
     </Box>

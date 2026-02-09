@@ -1,91 +1,82 @@
 import React from 'react'
 import { Box, FormControl, Select, MenuItem, TextField } from '@mui/material'
-import { KeyValuePair } from '@shared/types/kv'
+import { HTTPRequest } from '@shared/types'
 import { useI18n } from '../../contexts/useI18n'
 
-type Props = {
-  headers: KeyValuePair[]
-  onChange: (headers: KeyValuePair[]) => void
+type AuthorizationEditorProps = {
+  request: HTTPRequest
+  onChange: (request: HTTPRequest) => void
 }
 
-export default function AuthorizationEditor({ headers, onChange }: Props): React.ReactElement {
+export default function AuthorizationEditor({
+  request,
+  onChange
+}: AuthorizationEditorProps): React.ReactElement {
   const { t } = useI18n()
 
-  const findAuth = (): {
-    type: 'none' | 'basic' | 'bearer'
-    user?: string
-    pass?: string
+  const updateAuth = (val: {
+    type?: 'none' | 'basic' | 'bearer'
+    username?: string
+    password?: string
     token?: string
-  } => {
-    const auth = (headers || []).find(
-      (h) => h.key?.toLowerCase() === 'authorization' && h.enabled !== false
-    )
-    if (!auth || !auth.value) return { type: 'none' }
-    const v = auth.value
-    if (v.startsWith('Basic ')) {
-      try {
-        const payload = atob(v.slice(6))
-        const idx = payload.indexOf(':')
-        if (idx >= 0) {
-          return { type: 'basic', user: payload.slice(0, idx), pass: payload.slice(idx + 1) }
+  }): void => {
+    const prev = request?.auth || { type: 'none' }
+    let headers = request?.headers || []
+    let authorization: string | undefined
+
+    switch (val.type || prev.type) {
+      case 'basic': {
+        const cred = `${val.username || prev.username}:${val.password || prev.password}`
+        try {
+          const b = btoa(cred)
+          authorization = `Basic ${b}`
+        } catch (err) {
+          console.error('Failed to encode basic auth:', err)
+          authorization = `Basic ${cred}`
         }
-      } catch (err) {
-        console.error('Failed to decode basic auth:', err)
-        return { type: 'basic' }
+        break
       }
-      return { type: 'basic' }
+      case 'bearer':
+        authorization = `Bearer ${val.token || prev.token}`
+        break
     }
-    if (v.startsWith('Bearer ')) {
-      return { type: 'bearer', token: v.slice(7) }
-    }
-    return { type: 'none' }
-  }
 
-  const initial = findAuth()
-  const [type, setType] = React.useState(initial.type)
-  const [username, setUsername] = React.useState(initial.user ?? '')
-  const [password, setPassword] = React.useState(initial.pass ?? '')
-  const [token, setToken] = React.useState(initial.token ?? '')
-
-  const updateHeaders = (next: KeyValuePair[]): void => {
-    onChange(next)
-  }
-
-  const applyAuth = (
-    nextType: string,
-    nextUser = username,
-    nextPass = password,
-    nextToken = token
-  ): void => {
-    let next = (headers || []).filter((h) => h.key?.toLowerCase() !== 'authorization')
-
-    if (nextType === 'basic') {
-      const cred = `${nextUser ?? ''}:${nextPass ?? ''}`
-      try {
-        const b = btoa(cred)
-        next = [{ key: 'Authorization', value: `Basic ${b}`, enabled: true }, ...next]
-      } catch (err) {
-        console.error('Failed to encode basic auth:', err)
-        next = [{ key: 'Authorization', value: `Basic ${cred}`, enabled: true }, ...next]
+    if (authorization) {
+      if (!headers.some((h) => h.key?.toLowerCase() === 'authorization')) {
+        headers = [{ key: 'Authorization', value: authorization, enabled: true }, ...headers]
+      } else {
+        headers = headers.map((h) =>
+          h.key?.toLowerCase() === 'authorization' ? { ...h, value: authorization! } : h
+        )
       }
-    } else if (nextType === 'bearer') {
-      next = [{ key: 'Authorization', value: `Bearer ${nextToken ?? ''}`, enabled: true }, ...next]
+    } else {
+      headers = headers.filter((h) => h.key?.toLowerCase() !== 'authorization')
     }
 
-    updateHeaders(next)
+    onChange({
+      ...request,
+      headers,
+      auth: {
+        type: val.type || prev.type,
+        username: val.username || prev.username,
+        password: val.password || prev.password,
+        token: val.token || prev.token
+      }
+    })
   }
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
       <FormControl size="small" sx={{ minWidth: 220 }}>
         <Select
-          value={type}
+          value={request?.auth?.type || 'none'}
           size="small"
           variant="standard"
           onChange={(e) => {
             const next = e.target.value as 'none' | 'basic' | 'bearer'
-            setType(next)
-            applyAuth(next)
+            updateAuth({
+              type: next
+            })
           }}
         >
           <MenuItem value="none">{t('request.auth.none')}</MenuItem>
@@ -94,40 +85,43 @@ export default function AuthorizationEditor({ headers, onChange }: Props): React
         </Select>
       </FormControl>
 
-      {type === 'basic' && (
+      {request?.auth?.type === 'basic' && (
         <Box sx={{ pl: 0, display: 'flex', gap: 1, flexDirection: 'column' }}>
           <TextField
             size="small"
             placeholder={t('request.auth.username')}
-            value={username}
+            value={request?.auth?.username || ''}
             onChange={(e) => {
-              setUsername(e.target.value)
-              applyAuth('basic', e.target.value, password)
+              updateAuth({
+                username: e.target.value
+              })
             }}
           />
           <TextField
             size="small"
             placeholder={t('request.auth.password')}
             type="password"
-            value={password}
+            value={request?.auth?.password || ''}
             onChange={(e) => {
-              setPassword(e.target.value)
-              applyAuth('basic', username, e.target.value)
+              updateAuth({
+                password: e.target.value
+              })
             }}
           />
         </Box>
       )}
 
-      {type === 'bearer' && (
+      {request?.auth?.type === 'bearer' && (
         <Box sx={{ pl: 0 }}>
           <TextField
             size="small"
             fullWidth
             placeholder={t('request.auth.token')}
-            value={token}
+            value={request?.auth?.token || ''}
             onChange={(e) => {
-              setToken(e.target.value)
-              applyAuth('bearer', undefined, undefined, e.target.value)
+              updateAuth({
+                token: e.target.value
+              })
             }}
           />
         </Box>
