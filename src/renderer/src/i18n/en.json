@@ -59,7 +59,11 @@
   "addressbar.placeholder": "Enter URL or paste text",
 
   "kv.key": "Key",
+  "kv.type": "Type",
   "kv.value": "Value",
+  "kv.type.text": "Text",
+  "kv.type.file": "File",
+  "kv.file.select": "Select File",
 
   "history.title": "History",
   "history.search.placeholder": "Search history",

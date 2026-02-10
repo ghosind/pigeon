@@ -122,7 +122,7 @@ export default function BodyEditor({ body, onChange }: BodyEditorProps): React.R
 
         {mode === 'form' && (
           <Box sx={{ height: '100%' }}>
-            <KeyValueEditor rows={formRows} onChange={updateForm} />
+            <KeyValueEditor rows={formRows} onChange={updateForm} allowFile />
           </Box>
         )}
 

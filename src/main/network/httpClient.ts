@@ -5,10 +5,19 @@ import { createAgent } from './agent'
 import { normalizeError } from './error'
 import { promises as fs } from 'fs'
 
-const keyValuePairsToFormData = (pairs: KeyValuePair[]): FormData => {
+const keyValuePairsToFormData = async (pairs: KeyValuePair[]): Promise<FormData> => {
   const formData = new FormData()
   for (const pair of pairs) {
-    if (pair.enabled !== false && pair.key) {
+    if (!pair.enabled) {
+      continue
+    }
+
+    if (pair.type === 'file') {
+      const content = await fs.readFile(pair.value)
+      const fileName = pair.value.split('/').pop() || ''
+      const file = new File([content], fileName)
+      formData.append(pair.key, file, fileName)
+    } else {
       formData.append(pair.key, pair.value || '')
     }
   }
@@ -41,9 +50,6 @@ const setContentType = (headers: Headers, contentType?: HTTPContentType): void =
   switch (contentType) {
     case 'xml':
       headers.set('content-type', 'application/xml')
-      break
-    case 'form':
-      headers.set('content-type', 'multipart/form-data')
       break
     case 'urlencoded':
       headers.set('content-type', 'application/x-www-form-urlencoded')
@@ -82,8 +88,7 @@ const buildRequestOptions = async (
       break
     }
     case 'form':
-      body = keyValuePairsToFormData(req.body.form || [])
-      setContentType(headers, 'form')
+      body = await keyValuePairsToFormData(req.body.form || [])
       break
     case 'binary': {
       const path = req.body?.filePath

@@ -8,20 +8,26 @@ import {
   TableCell,
   TableHead,
   TableRow,
-  InputBase
+  InputBase,
+  FormControl,
+  Select,
+  MenuItem,
+  Button
 } from '@mui/material'
 import DeleteIcon from '@mui/icons-material/Delete'
-import { KeyValuePair } from '@shared/types/kv'
+import { KeyValuePair, KeyValueType } from '@shared/types/kv'
 import { useI18n } from '../../contexts/useI18n'
 
 type KeyValueEditorProps = {
   rows: KeyValuePair[]
   onChange: (rows: KeyValuePair[]) => void
+  allowFile?: boolean
 }
 
 export default function KeyValueEditor({
   rows,
-  onChange
+  onChange,
+  allowFile
 }: KeyValueEditorProps): React.ReactElement {
   const { t } = useI18n()
   const dragIndex = useRef<number | null>(null)
@@ -78,11 +84,17 @@ export default function KeyValueEditor({
     if (isPlaceholder) {
       const newRow: KeyValuePair = {
         key: patch.key ?? '',
+        type: patch.type ?? KeyValueType.Text,
         value: patch.value ?? '',
         enabled: patch.enabled ?? true
       }
 
-      if (newRow.key === '' && newRow.value === '' && patch.enabled === undefined) {
+      if (
+        newRow.key === '' &&
+        newRow.type === '' &&
+        newRow.value === '' &&
+        patch.enabled === undefined
+      ) {
         return
       }
 
@@ -96,70 +108,110 @@ export default function KeyValueEditor({
     onChange(rows.filter((_, index) => index !== idx))
   }
 
+  const handleFileSelect = async (idx: number): Promise<void> => {
+    try {
+      const path: string | null = await window.api.openFileDialog()
+      if (!path) {
+        return
+      }
+      updateRow(idx, { value: path })
+    } catch (e) {
+      console.error('open file dialog failed', e)
+    }
+  }
+
   return (
     <Box>
       <Table size="small">
         <TableHead>
           <TableRow sx={{ height: 36 }}>
-            <TableCell sx={{ width: 80 }}></TableCell>
+            <TableCell sx={{ width: 20 }}></TableCell>
             <TableCell>{t('kv.key')}</TableCell>
+            {allowFile && <TableCell sx={{ width: 60 }}>{t('kv.type')}</TableCell>}
             <TableCell>{t('kv.value')}</TableCell>
-            <TableCell sx={{ width: 60 }}></TableCell>
+            <TableCell sx={{ width: 20 }}></TableCell>
           </TableRow>
         </TableHead>
         <TableBody>
-          {[...rows, { key: '', value: '', enabled: undefined }].map((row, index) => {
-            const isPlaceholder = index === rows.length
-            return (
-              <TableRow
-                key={index}
-                draggable={!isPlaceholder}
-                onDragStart={(e) => (isPlaceholder ? undefined : handleDragStart(e, index))}
-                onDragOver={(e) => handleDragOver(e, index)}
-                onDrop={(e) => handleDrop(e, index)}
-                onDragEnd={handleDragEnd}
-                sx={{
-                  bgcolor: dragOverIndex === index ? 'action.selected' : undefined,
-                  cursor: isPlaceholder ? 'default' : 'grab'
-                }}
-              >
-                <TableCell sx={{ width: 80 }}>
-                  <Checkbox
-                    checked={row.enabled ?? true}
-                    onChange={(e) => updateRow(index, { enabled: e.target.checked })}
-                    sx={{ visibility: isPlaceholder ? 'hidden' : 'visible' }}
-                  />
-                </TableCell>
-                <TableCell>
-                  <InputBase
-                    size="small"
-                    fullWidth
-                    placeholder={t('kv.key')}
-                    value={isPlaceholder ? '' : (row.key ?? '')}
-                    onChange={(e) => updateRow(index, { key: e.target.value })}
-                  />
-                </TableCell>
-                <TableCell>
-                  <InputBase
-                    size="small"
-                    fullWidth
-                    placeholder={t('kv.value')}
-                    value={isPlaceholder ? '' : (row.value ?? '')}
-                    onChange={(e) => updateRow(index, { value: e.target.value })}
-                  />
-                </TableCell>
-                <TableCell>
-                  <IconButton
-                    size="small"
-                    onClick={() => removeRow(index)}
-                    sx={{ visibility: isPlaceholder ? 'hidden' : 'visible' }}
-                  >
-                    <DeleteIcon fontSize="small" />
-                  </IconButton>
-                </TableCell>
-              </TableRow>
-            )
-          })}
+          {[...rows, { key: '', value: '', type: KeyValueType.Text, enabled: undefined }].map(
+            (row, index) => {
+              const isPlaceholder = index === rows.length
+              return (
+                <TableRow
+                  key={index}
+                  draggable={!isPlaceholder}
+                  onDragStart={(e) => (isPlaceholder ? undefined : handleDragStart(e, index))}
+                  onDragOver={(e) => handleDragOver(e, index)}
+                  onDrop={(e) => handleDrop(e, index)}
+                  onDragEnd={handleDragEnd}
+                  sx={{
+                    bgcolor: dragOverIndex === index ? 'action.selected' : undefined,
+                    cursor: isPlaceholder ? 'default' : 'grab'
+                  }}
+                >
+                  <TableCell sx={{ width: 20 }}>
+                    <Checkbox
+                      checked={row.enabled ?? true}
+                      onChange={(e) => updateRow(index, { enabled: e.target.checked })}
+                      sx={{ visibility: isPlaceholder ? 'hidden' : 'visible' }}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <InputBase
+                      size="small"
+                      fullWidth
+                      placeholder={t('kv.key')}
+                      value={isPlaceholder ? '' : (row.key ?? '')}
+                      onChange={(e) => updateRow(index, { key: e.target.value })}
+                    />
+                  </TableCell>
+                  {allowFile && (
+                    <TableCell>
+                      <FormControl size="small" sx={{ width: 60 }}>
+                        <Select
+                          size="small"
+                          variant="standard"
+                          value={row.type ?? KeyValueType.Text}
+                          onChange={(e) =>
+                            updateRow(index, { type: e.target.value as KeyValueType })
+                          }
+                        >
+                          <MenuItem value={KeyValueType.Text}>{t('kv.type.text')}</MenuItem>
+                          <MenuItem value={KeyValueType.File}>{t('kv.type.file')}</MenuItem>
+                        </Select>
+                      </FormControl>
+                    </TableCell>
+                  )}
+                  <TableCell>
+                    {row.type === 'file' ? (
+                      <Box sx={{ p: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Button size="small" onClick={() => handleFileSelect(index)}>
+                          {(row?.value && row.value.split('/').pop()) || t('kv.file.select')}
+                        </Button>
+                      </Box>
+                    ) : (
+                      <InputBase
+                        size="small"
+                        fullWidth
+                        placeholder={t('kv.value')}
+                        value={isPlaceholder ? '' : (row.value ?? '')}
+                        onChange={(e) => updateRow(index, { value: e.target.value })}
+                      />
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <IconButton
+                      size="small"
+                      onClick={() => removeRow(index)}
+                      sx={{ visibility: isPlaceholder ? 'hidden' : 'visible' }}
+                    >
+                      <DeleteIcon fontSize="small" />
+                    </IconButton>
+                  </TableCell>
+                </TableRow>
+              )
+            }
+          )}
         </TableBody>
       </Table>
       <Box sx={{ mt: 1 }} />

@@ -59,7 +59,12 @@
   "addressbar.placeholder": "输入 URL 或粘贴文本",
 
   "kv.key": "键",
+  "kv.type": "类型",
   "kv.value": "值",
+  "kv.type.text": "文本",
+  "kv.type.file": "文件",
+  "kv.file.select": "选择文件",
+
   "history.title": "历史记录",
   "history.search.placeholder": "搜索历史记录",
   "history.clear": "清除",
