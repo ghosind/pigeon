@@ -203,12 +203,22 @@ export const RequestManagerProvider: React.FC<React.PropsWithChildren> = ({ chil
   }
 
   const addHistory = (req: Request): void => {
+    const saveResponse = (() => {
+      try {
+        const v = localStorage.getItem('pigeon:history.saveResponse')
+        return v === null ? true : v === 'true'
+      } catch (e: unknown) {
+        console.error('Failed to read history.saveResponse setting', e)
+        return true
+      }
+    })()
+
     const item: RequestHistory = {
       id: uuid.v4(),
       requestId: req.id,
       type: req.type,
       request: req.request,
-      response: req.response,
+      response: saveResponse ? req.response : undefined,
       timestamp: Date.now()
     }
     setHistory((s) => {

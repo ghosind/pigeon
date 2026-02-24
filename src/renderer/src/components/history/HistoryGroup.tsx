@@ -63,7 +63,8 @@ export default function HistoryGroup({
                 const req: Request = {
                   id: h.id,
                   type: h.type,
-                  request: h.request
+                  request: h.request,
+                  response: h.response
                 }
                 openRequest(req)
               }}
