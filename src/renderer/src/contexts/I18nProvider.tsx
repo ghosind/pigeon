@@ -33,7 +33,32 @@ export const I18nProvider: React.FC<React.PropsWithChildren<Record<string, unkno
     } catch (err) {
       console.error('Failed to set language to localStorage:', err)
     }
+    // persist to sqlite via preload API
+    try {
+      if (typeof window !== 'undefined' && window.api?.saveSettings) {
+        window.api.saveSettings({ language: lang })
+      }
+    } catch (err) {
+      console.error('Failed to save language to sqlite:', err)
+    }
   }, [lang])
+
+  // on mount, try load from sqlite and apply
+  useEffect(() => {
+    async function load(): Promise<void> {
+      try {
+        if (typeof window !== 'undefined' && window.api?.loadSettings) {
+          const res = await window.api.loadSettings()
+          if (res?.ok && res.result && res.result.language) {
+            setLang(res.result.language as Lang)
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load language from sqlite:', err)
+      }
+    }
+    load()
+  }, [])
 
   const t = useMemo(() => (key: string) => translations[lang][key] || key, [lang])
 

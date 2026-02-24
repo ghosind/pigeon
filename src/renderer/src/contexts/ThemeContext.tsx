@@ -21,7 +21,31 @@ const AppThemeProvider: React.FC<React.PropsWithChildren> = ({ children }) => {
     } catch (err) {
       console.error('Failed to save theme mode to localStorage:', err)
     }
+    // persist to sqlite via preload API
+    try {
+      if (typeof window !== 'undefined' && window.api?.saveSettings) {
+        window.api.saveSettings({ theme: mode })
+      }
+    } catch (err) {
+      console.error('Failed to save theme to sqlite:', err)
+    }
   }, [mode])
+
+  useEffect(() => {
+    async function load(): Promise<void> {
+      try {
+        if (typeof window !== 'undefined' && window.api?.loadSettings) {
+          const res = await window.api.loadSettings()
+          if (res?.ok && res.result && res.result.theme) {
+            setMode(res.result.theme as ThemeMode)
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load theme from sqlite:', err)
+      }
+    }
+    load()
+  }, [])
 
   const prefersDark = usePrefersDark()
 

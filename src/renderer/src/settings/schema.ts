@@ -56,7 +56,11 @@ export function useSettingsSchema(): SettingsSection[] {
           })(),
           onChange: (v: unknown) => {
             try {
-              localStorage.setItem('pigeon:history.saveResponse', String(Boolean(v)))
+              const val = String(Boolean(v))
+              localStorage.setItem('pigeon:history.saveResponse', val)
+              if (typeof window !== 'undefined' && window.api?.saveSettings) {
+                window.api.saveSettings({ 'history.saveResponse': val })
+              }
             } catch (e) {
               console.error('Failed to save history.saveResponse setting', e)
             }
