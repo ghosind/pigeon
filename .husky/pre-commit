@@ -1,0 +1,11 @@
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+# Lint files
+npm run lint
+
+# Run full typecheck
+npm run typecheck
+
+# Validate i18n
+npm run i18n:validate
