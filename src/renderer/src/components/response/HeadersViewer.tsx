@@ -21,19 +21,37 @@ export default function HeadersViewer({ response }: HeadersViewerProps): React.R
     : []
 
   return (
-    <TableContainer component={Box} sx={{ boxShadow: 'none', height: '100%', overflow: 'auto' }}>
-      <Table size="small">
+    <TableContainer
+      component={Box}
+      sx={{
+        boxShadow: 'none',
+        height: '100%',
+        minHeight: 0,
+        overflow: 'auto',
+        display: 'flex',
+        flexDirection: 'column'
+      }}
+    >
+      <Table size="small" sx={{ tableLayout: 'fixed', width: '100%' }}>
         <TableHead>
           <TableRow>
-            <TableCell>{t('response.headersTable.name')}</TableCell>
-            <TableCell>{t('response.headersTable.value')}</TableCell>
+            <TableCell sx={{ width: '25%', maxWidth: '25%' }}>
+              {t('response.headersTable.name')}
+            </TableCell>
+            <TableCell sx={{ width: '75%', maxWidth: '75%' }}>
+              {t('response.headersTable.value')}
+            </TableCell>
           </TableRow>
         </TableHead>
         <TableBody>
           {headers.map(([k, v]) => (
             <TableRow key={k}>
-              <TableCell>{k}</TableCell>
-              <TableCell>{String(v)}</TableCell>
+              <TableCell sx={{ verticalAlign: 'top', wordBreak: 'break-all' }}>{k}</TableCell>
+              <TableCell
+                sx={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflowWrap: 'anywhere' }}
+              >
+                {String(v)}
+              </TableCell>
             </TableRow>
           ))}
         </TableBody>
