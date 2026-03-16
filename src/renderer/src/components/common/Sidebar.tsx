@@ -51,7 +51,34 @@ export default function Sidebar(): React.JSX.Element {
     } catch (e) {
       console.error(e)
     }
+
+    // persist to sqlite via preload API
+    try {
+      if (typeof window !== 'undefined' && window.api?.saveSettings) {
+        window.api.saveSettings({ sidebarCollapsed: collapsed ? '1' : '0' })
+      }
+    } catch (err) {
+      console.error('Failed to save sidebar collapsed to sqlite:', err)
+    }
   }, [collapsed])
+
+  React.useEffect(() => {
+    async function load(): Promise<void> {
+      try {
+        if (typeof window !== 'undefined' && window.api?.loadSettings) {
+          const res = await window.api.loadSettings()
+          if (res?.ok && res.result && typeof res.result.sidebarCollapsed !== 'undefined') {
+            const loaded = res.result.sidebarCollapsed === '1'
+            setCollapsed((prev) => (prev === loaded ? prev : loaded))
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load sidebar collapsed from sqlite:', err)
+      }
+    }
+
+    load()
+  }, [])
 
   return (
     <Box
