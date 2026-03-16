@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useRef } from 'react'
 import Dialog from '@mui/material/Dialog'
 import DialogTitle from '@mui/material/DialogTitle'
 import DialogContent from '@mui/material/DialogContent'
@@ -21,7 +21,20 @@ export function SettingsModal({ open, onClose }: SettingsModalProps): React.Reac
   const [activeKey, setActiveKey] = useState<string>(sections[0]?.key ?? '')
   const [localSections, setLocalSections] = useState(() => sections)
 
+  const sectionsSnapshotRef = useRef<string | null>(null)
+
   useEffect(() => {
+    const snap = JSON.stringify(
+      sections.map((s) => ({
+        key: s.key,
+        fields: s.fields.map((f) => ({ key: f.key, value: f.value }))
+      }))
+    )
+
+    if (sectionsSnapshotRef.current === snap) return
+
+    sectionsSnapshotRef.current = snap
+
     setLocalSections(sections)
     if (!sections.find((s) => s.key === activeKey)) {
       setActiveKey(sections[0]?.key ?? '')
