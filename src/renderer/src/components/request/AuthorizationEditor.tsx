@@ -23,10 +23,14 @@ export default function AuthorizationEditor({
     const prev = request?.auth || { type: 'none' }
     let headers = request?.headers || []
     let authorization: string | undefined
+    const type = val.type !== undefined ? val.type : prev.type
+    const username = val.username !== undefined ? val.username : prev.username
+    const password = val.password !== undefined ? val.password : prev.password
+    const token = val.token !== undefined ? val.token : prev.token
 
-    switch (val.type || prev.type) {
+    switch (type) {
       case 'basic': {
-        const cred = `${val.username || prev.username}:${val.password || prev.password}`
+        const cred = `${username}:${password}`
         try {
           const b = btoa(cred)
           authorization = `Basic ${b}`
@@ -37,7 +41,7 @@ export default function AuthorizationEditor({
         break
       }
       case 'bearer':
-        authorization = `Bearer ${val.token || prev.token}`
+        authorization = `Bearer ${token}`
         break
     }
 
@@ -57,10 +61,10 @@ export default function AuthorizationEditor({
       ...request,
       headers,
       auth: {
-        type: val.type || prev.type,
-        username: val.username || prev.username,
-        password: val.password || prev.password,
-        token: val.token || prev.token
+        type,
+        username,
+        password,
+        token
       }
     })
   }
