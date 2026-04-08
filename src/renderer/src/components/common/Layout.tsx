@@ -30,9 +30,12 @@ const Layout: React.FC<React.PropsWithChildren> = ({ children }) => {
 
         <Toolbar variant="dense" sx={{ minHeight: 48, height: 48 }} />
 
-        <Box component="main" sx={{ height: 'calc(100vh - 48px)', width: '100%', display: 'flex' }}>
+        <Box
+          component="main"
+          sx={{ height: 'calc(100vh - 48px)', width: '100%', display: 'flex', minWidth: 0 }}
+        >
           <Sidebar />
-          <Box sx={{ flex: 1, minHeight: 0 }}>{children}</Box>
+          <Box sx={{ flex: 1, minHeight: 0, minWidth: 0 }}>{children}</Box>
         </Box>
 
         <SettingsModal open={open} onClose={() => setOpen(false)} />
