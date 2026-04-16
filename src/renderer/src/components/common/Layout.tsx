@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import AppBar from '@mui/material/AppBar'
 import Toolbar from '@mui/material/Toolbar'
 import Box from '@mui/material/Box'
@@ -9,13 +9,49 @@ import SettingsIcon from '@mui/icons-material/Settings'
 import SettingsModal from './SettingsModal'
 import Sidebar from './Sidebar'
 import { RequestManagerProvider } from '@renderer/contexts/RequestManagerContext'
+import { useRequestManager } from '@renderer/contexts/useRequestManager'
+import * as uuid from 'uuid'
+import { Request, RequestType, HTTPMethod } from '@shared/types'
 
 const Layout: React.FC<React.PropsWithChildren> = ({ children }) => {
   const [open, setOpen] = useState(false)
   const { t } = useI18n()
+  const Inner: React.FC<React.PropsWithChildren> = ({ children: innerChildren }) => {
+    const requestManager = useRequestManager()
 
-  return (
-    <RequestManagerProvider>
+    useEffect(() => {
+      const onKeyDown = (e: KeyboardEvent): void => {
+        const mod = e.ctrlKey || e.metaKey
+        if (!mod) {
+          return
+        }
+
+        const k = e.key.toLowerCase()
+        switch (k) {
+          case 't': {
+            const id = uuid.v4()
+            const newReq: Request = {
+              id,
+              request: { method: HTTPMethod.GET, url: '' },
+              type: RequestType.HTTP
+            }
+            requestManager.openRequest(newReq, { newTab: true })
+            break
+          }
+          case 'w': {
+            e.preventDefault()
+            requestManager.closeCurrent && requestManager.closeCurrent()
+            break
+          }
+          default:
+        }
+      }
+
+      window.addEventListener('keydown', onKeyDown)
+      return () => window.removeEventListener('keydown', onKeyDown)
+    }, [requestManager])
+
+    return (
       <Box sx={{ minHeight: '100vh' }}>
         <AppBar position="fixed" color="default" elevation={1} sx={{ height: 48 }}>
           <Toolbar variant="dense" sx={{ minHeight: 48, height: 48 }}>
@@ -35,11 +71,17 @@ const Layout: React.FC<React.PropsWithChildren> = ({ children }) => {
           sx={{ height: 'calc(100vh - 48px)', width: '100%', display: 'flex', minWidth: 0 }}
         >
           <Sidebar />
-          <Box sx={{ flex: 1, minHeight: 0, minWidth: 0 }}>{children}</Box>
+          <Box sx={{ flex: 1, minHeight: 0, minWidth: 0 }}>{innerChildren}</Box>
         </Box>
 
         <SettingsModal open={open} onClose={() => setOpen(false)} />
       </Box>
+    )
+  }
+
+  return (
+    <RequestManagerProvider>
+      <Inner>{children}</Inner>
     </RequestManagerProvider>
   )
 }

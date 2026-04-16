@@ -17,8 +17,10 @@ export type RequestManagerContextValue = {
   addHistory: (req: Request) => void
   clearHistory: () => void
   openRequest: (req: Request, options?: OpenRequestOptions) => void
+  closeCurrent?: () => void
   registerOpenHandler: (h: OpenHandler | null) => void
   registerCollectionChangeHandler: (h: ((ids: string[]) => void) | null) => void
+  registerCloseHandler?: (h: (() => void) | null) => void
 }
 
 const RequestManagerContext = createContext<RequestManagerContextValue | null>(null)

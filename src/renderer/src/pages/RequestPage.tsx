@@ -18,6 +18,29 @@ export default function RequestPage(): React.JSX.Element {
   const [activeId, setActiveId] = useState<string>(requests[0].id)
   const sendingRef = React.useRef<Record<string, boolean>>({})
 
+  const closeRequest = React.useCallback(
+    (id: string): void => {
+      setRequests((t) => t.filter((req) => req.id !== id))
+      if (activeId === id) {
+        if (requests.length > 1) {
+          const idx = requests.findIndex((req) => req.id === id)
+          const newActiveRequest = requests[idx === 0 ? 1 : idx - 1]
+          setActiveId(newActiveRequest.id)
+        } else {
+          const newId = uuid.v4()
+          const newReq: Request = {
+            id: newId,
+            request: { method: HTTPMethod.GET, url: '' },
+            type: RequestType.HTTP
+          }
+          setRequests([newReq])
+          setActiveId(newId)
+        }
+      }
+    },
+    [activeId, requests]
+  )
+
   React.useEffect(() => {
     requestManager.registerOpenHandler((req: Request, opts?: OpenRequestOptions) => {
       const id = req.id || uuid.v4()
@@ -33,6 +56,16 @@ export default function RequestPage(): React.JSX.Element {
     })
     return () => requestManager.registerOpenHandler(null)
   }, [requestManager, activeId, requests])
+
+  React.useEffect(() => {
+    if (requestManager.registerCloseHandler) {
+      requestManager.registerCloseHandler(() => {
+        closeRequest(activeId)
+      })
+      return () => requestManager.registerCloseHandler && requestManager.registerCloseHandler(null)
+    }
+    return undefined
+  }, [requestManager, activeId, closeRequest])
 
   React.useEffect(() => {
     requestManager.registerCollectionChangeHandler((removedIds) => {
@@ -72,26 +105,6 @@ export default function RequestPage(): React.JSX.Element {
       const next = [...without.slice(0, insertAt), item, ...without.slice(insertAt)]
       return next
     })
-  }
-
-  const closeRequest = (id: string): void => {
-    setRequests((t) => t.filter((req) => req.id !== id))
-    if (activeId === id) {
-      if (requests.length > 1) {
-        const idx = requests.findIndex((req) => req.id === id)
-        const newActiveRequest = requests[idx === 0 ? 1 : idx - 1]
-        setActiveId(newActiveRequest.id)
-      } else {
-        const newId = uuid.v4()
-        const newReq: Request = {
-          id: newId,
-          request: { method: HTTPMethod.GET, url: '' },
-          type: RequestType.HTTP
-        }
-        setRequests([newReq])
-        setActiveId(newId)
-      }
-    }
   }
 
   const selectRequest = (id: string): void => setActiveId(id)

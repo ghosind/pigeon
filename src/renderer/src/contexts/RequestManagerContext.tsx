@@ -46,6 +46,7 @@ export const RequestManagerProvider: React.FC<React.PropsWithChildren> = ({ chil
   const [collections, setCollections] = useState<CollectionNode[]>(() => loadCollections())
   const [history, setHistory] = useState<RequestHistory[]>(() => loadHistory())
   const openHandler = useRef<OpenHandler | null>(null)
+  const closeHandler = useRef<(() => void) | null>(null)
   const collectionChangeHandler = useRef<((ids: string[]) => void) | null>(null)
 
   useEffect(() => saveCollections(collections), [collections])
@@ -242,6 +243,20 @@ export const RequestManagerProvider: React.FC<React.PropsWithChildren> = ({ chil
     openHandler.current = h
   }
 
+  const registerCloseHandler = (h: (() => void) | null): void => {
+    closeHandler.current = h
+  }
+
+  const closeCurrent = (): void => {
+    try {
+      if (closeHandler.current) {
+        closeHandler.current()
+      }
+    } catch (e) {
+      console.error(e)
+    }
+  }
+
   const registerCollectionChangeHandler = (h: ((ids: string[]) => void) | null): void => {
     collectionChangeHandler.current = h
   }
@@ -259,7 +274,9 @@ export const RequestManagerProvider: React.FC<React.PropsWithChildren> = ({ chil
         addHistory,
         clearHistory,
         openRequest,
+        closeCurrent,
         registerOpenHandler,
+        registerCloseHandler,
         registerCollectionChangeHandler
       }}
     >
