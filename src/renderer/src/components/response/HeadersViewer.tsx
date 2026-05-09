@@ -46,9 +46,16 @@ export default function HeadersViewer({ response }: HeadersViewerProps): React.R
         <TableBody>
           {headers.map(([k, v]) => (
             <TableRow key={k}>
-              <TableCell sx={{ verticalAlign: 'top', wordBreak: 'break-all' }}>{k}</TableCell>
+              <TableCell sx={{ verticalAlign: 'top', wordBreak: 'break-all', userSelect: 'text' }}>
+                {k}
+              </TableCell>
               <TableCell
-                sx={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflowWrap: 'anywhere' }}
+                sx={{
+                  whiteSpace: 'pre-wrap',
+                  wordBreak: 'break-word',
+                  overflowWrap: 'anywhere',
+                  userSelect: 'text'
+                }}
               >
                 {String(v)}
               </TableCell>
