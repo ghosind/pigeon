@@ -5,6 +5,8 @@ import { createAgent } from './agent'
 import { normalizeError } from './error'
 import { promises as fs } from 'fs'
 
+const DefaultUserAgent = `Pigeon/${process.env.npm_package_version}`
+
 const keyValuePairsToFormData = async (pairs: KeyValuePair[]): Promise<FormData> => {
   const formData = new FormData()
   for (const pair of pairs) {
@@ -27,16 +29,16 @@ const keyValuePairsToFormData = async (pairs: KeyValuePair[]): Promise<FormData>
 function buildHeaders(pairs?: KeyValuePair[]): Headers {
   const headers = new Headers()
 
-  if (!pairs || pairs.length === 0) {
-    return headers
-  }
-
-  for (const { key, value, enabled } of pairs) {
+  for (const { key, value, enabled } of pairs || []) {
     if (enabled === false || !key || value == null) {
       continue
     }
 
     headers.append(key, value)
+  }
+
+  if (!headers.has('user-agent')) {
+    headers.set('user-agent', DefaultUserAgent)
   }
 
   return headers
