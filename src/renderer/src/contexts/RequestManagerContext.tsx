@@ -3,54 +3,77 @@ import * as uuid from 'uuid'
 import { Request, RequestHistory, CollectionNode } from '@shared/types'
 import { RequestManagerContext, OpenHandler, OpenRequestOptions } from './useRequestManager'
 
-const KEY_COLLECTIONS = 'pigeon:collections'
-const KEY_HISTORY = 'pigeon:history'
-
-function loadCollections(): CollectionNode[] {
-  try {
-    const raw = localStorage.getItem(KEY_COLLECTIONS)
-    return raw ? JSON.parse(raw) : []
-  } catch (e) {
-    console.error(e)
-    return []
-  }
-}
-
-function saveCollections(list: CollectionNode[]): void {
-  try {
-    localStorage.setItem(KEY_COLLECTIONS, JSON.stringify(list))
-  } catch (e) {
-    console.error(e)
-  }
-}
-
-function loadHistory(): RequestHistory[] {
-  try {
-    const raw = localStorage.getItem(KEY_HISTORY)
-    return raw ? JSON.parse(raw) : []
-  } catch (e) {
-    console.error(e)
-    return []
-  }
-}
-
-function saveHistory(list: RequestHistory[]): void {
-  try {
-    localStorage.setItem(KEY_HISTORY, JSON.stringify(list))
-  } catch (e) {
-    console.error(e)
-  }
-}
-
 export const RequestManagerProvider: React.FC<React.PropsWithChildren> = ({ children }) => {
-  const [collections, setCollections] = useState<CollectionNode[]>(() => loadCollections())
-  const [history, setHistory] = useState<RequestHistory[]>(() => loadHistory())
+  const [collections, setCollections] = useState<CollectionNode[]>([])
+  const [history, setHistory] = useState<RequestHistory[]>([])
   const openHandler = useRef<OpenHandler | null>(null)
   const closeHandler = useRef<(() => void) | null>(null)
   const collectionChangeHandler = useRef<((ids: string[]) => void) | null>(null)
+  const collectionsHydrated = useRef(false)
+  const historyHydrated = useRef(false)
 
-  useEffect(() => saveCollections(collections), [collections])
-  useEffect(() => saveHistory(history), [history])
+  useEffect(() => {
+    async function hydrate(): Promise<void> {
+      if (typeof window === 'undefined' || !window.api) {
+        collectionsHydrated.current = true
+        historyHydrated.current = true
+        return
+      }
+
+      try {
+        const [collectionsRes, historyRes] = await Promise.all([
+          window.api.loadCollections(),
+          window.api.loadHistory()
+        ])
+
+        if (collectionsRes?.ok && Array.isArray(collectionsRes.result)) {
+          setCollections(collectionsRes.result)
+        }
+        if (historyRes?.ok && Array.isArray(historyRes.result)) {
+          setHistory(historyRes.result)
+        }
+      } catch (err) {
+        console.error('Failed to hydrate request manager data from sqlite:', err)
+      } finally {
+        collectionsHydrated.current = true
+        historyHydrated.current = true
+      }
+    }
+
+    void hydrate()
+  }, [])
+
+  useEffect(() => {
+    if (!collectionsHydrated.current) {
+      return
+    }
+
+    void (async () => {
+      try {
+        if (typeof window !== 'undefined' && window.api?.saveCollections) {
+          await window.api.saveCollections(collections)
+        }
+      } catch (err) {
+        console.error('Failed to save collections to sqlite:', err)
+      }
+    })()
+  }, [collections])
+
+  useEffect(() => {
+    if (!historyHydrated.current) {
+      return
+    }
+
+    void (async () => {
+      try {
+        if (typeof window !== 'undefined' && window.api?.saveHistory) {
+          await window.api.saveHistory(history)
+        }
+      } catch (err) {
+        console.error('Failed to save history to sqlite:', err)
+      }
+    })()
+  }, [history])
 
   const addFolder = (title: string, parentId: string | null = null): void => {
     const folder: CollectionNode = { id: uuid.v4(), type: 'folder', title, children: [] }
@@ -237,7 +260,6 @@ export const RequestManagerProvider: React.FC<React.PropsWithChildren> = ({ chil
 
   const clearHistory = (): void => {
     setHistory([])
-    saveHistory([])
   }
 
   const registerOpenHandler = (h: OpenHandler | null): void => {

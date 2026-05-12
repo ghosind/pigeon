@@ -5,9 +5,13 @@ import {
   IPC_REQUEST_SEND,
   IPC_OPEN_FILE,
   IPC_SETTINGS_SAVE,
-  IPC_SETTINGS_LOAD
+  IPC_SETTINGS_LOAD,
+  IPC_COLLECTIONS_SAVE,
+  IPC_COLLECTIONS_LOAD,
+  IPC_HISTORY_SAVE,
+  IPC_HISTORY_LOAD
 } from '@shared/constants/channels'
-import { HTTPRequest } from '@shared/types'
+import { CollectionNode, HTTPRequest, RequestHistory } from '@shared/types'
 
 const api = {
   sendRequest: (id: string, req: HTTPRequest) => ipcRenderer.invoke(IPC_REQUEST_SEND, id, req),
@@ -15,7 +19,12 @@ const api = {
   openFileDialog: () => ipcRenderer.invoke(IPC_OPEN_FILE),
   saveSettings: (settings: Record<string, string>) =>
     ipcRenderer.invoke(IPC_SETTINGS_SAVE, settings),
-  loadSettings: () => ipcRenderer.invoke(IPC_SETTINGS_LOAD)
+  loadSettings: () => ipcRenderer.invoke(IPC_SETTINGS_LOAD),
+  saveCollections: (collections: CollectionNode[]) =>
+    ipcRenderer.invoke(IPC_COLLECTIONS_SAVE, collections),
+  loadCollections: () => ipcRenderer.invoke(IPC_COLLECTIONS_LOAD),
+  saveHistory: (history: RequestHistory[]) => ipcRenderer.invoke(IPC_HISTORY_SAVE, history),
+  loadHistory: () => ipcRenderer.invoke(IPC_HISTORY_LOAD)
 }
 
 if (process.contextIsolated) {
