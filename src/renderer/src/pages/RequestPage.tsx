@@ -6,66 +6,89 @@ import RequestPanel from '@renderer/components/common/RequestPanel'
 import { HTTPMethod, Request, RequestType } from '@shared/types'
 import { OpenRequestOptions, useRequestManager } from '@renderer/contexts/useRequestManager'
 
+function createEmptyRequest(): Request {
+  return {
+    id: uuid.v4(),
+    request: { method: HTTPMethod.GET, url: '' },
+    type: RequestType.HTTP
+  }
+}
+
 export default function RequestPage(): React.JSX.Element {
   const requestManager = useRequestManager()
-  const [requests, setRequests] = useState<Request[]>(() => [
-    {
-      id: uuid.v4(),
-      request: { method: HTTPMethod.GET, url: '' },
-      type: RequestType.HTTP
-    }
-  ])
+  const [requests, setRequests] = useState<Request[]>(() => [createEmptyRequest()])
   const [activeId, setActiveId] = useState<string>(requests[0].id)
   const sendingRef = React.useRef<Record<string, boolean>>({})
+  const requestsRef = React.useRef<Request[]>(requests)
+  const activeIdRef = React.useRef<string>(activeId)
 
-  const closeRequest = React.useCallback(
-    (id: string): void => {
-      setRequests((t) => t.filter((req) => req.id !== id))
-      if (activeId === id) {
-        if (requests.length > 1) {
-          const idx = requests.findIndex((req) => req.id === id)
-          const newActiveRequest = requests[idx === 0 ? 1 : idx - 1]
-          setActiveId(newActiveRequest.id)
-        } else {
-          const newId = uuid.v4()
-          const newReq: Request = {
-            id: newId,
-            request: { method: HTTPMethod.GET, url: '' },
-            type: RequestType.HTTP
-          }
-          setRequests([newReq])
-          setActiveId(newId)
-        }
+  React.useEffect(() => {
+    requestsRef.current = requests
+  }, [requests])
+
+  React.useEffect(() => {
+    activeIdRef.current = activeId
+  }, [activeId])
+
+  const closeRequest = React.useCallback((id: string): void => {
+    let nextActiveId: string | null = null
+
+    setRequests((prev) => {
+      const idx = prev.findIndex((req) => req.id === id)
+      if (idx === -1) {
+        return prev
       }
-    },
-    [activeId, requests]
-  )
+
+      const filtered = prev.filter((req) => req.id !== id)
+
+      if (activeIdRef.current === id) {
+        if (filtered.length === 0) {
+          const fallback = createEmptyRequest()
+          nextActiveId = fallback.id
+          return [fallback]
+        }
+
+        const fallbackIndex = Math.min(idx, filtered.length - 1)
+        nextActiveId = filtered[fallbackIndex].id
+      }
+
+      return filtered
+    })
+
+    if (nextActiveId) {
+      setActiveId(nextActiveId)
+    }
+  }, [])
 
   React.useEffect(() => {
     requestManager.registerOpenHandler((req: Request, opts?: OpenRequestOptions) => {
-      const id = req.id || uuid.v4()
-      const exists = requests.find((t) => t.id === id)
-      if (!exists && (opts?.newTab ?? true)) {
-        setRequests((s) => [...s, req])
-      } else {
-        setRequests((s) => s.map((t) => (t.id === id ? req : t)))
-      }
+      const incoming = req.id ? req : { ...req, id: uuid.v4() }
+      const id = incoming.id
+
+      setRequests((prev) => {
+        const exists = prev.some((t) => t.id === id)
+        if (!exists && (opts?.newTab ?? true)) {
+          return [...prev, incoming]
+        }
+        return prev.map((t) => (t.id === id ? incoming : t))
+      })
+
       if (opts?.active ?? true) {
         setActiveId(id)
       }
     })
     return () => requestManager.registerOpenHandler(null)
-  }, [requestManager, activeId, requests])
+  }, [requestManager])
 
   React.useEffect(() => {
     if (requestManager.registerCloseHandler) {
       requestManager.registerCloseHandler(() => {
-        closeRequest(activeId)
+        closeRequest(activeIdRef.current)
       })
       return () => requestManager.registerCloseHandler && requestManager.registerCloseHandler(null)
     }
     return undefined
-  }, [requestManager, activeId, closeRequest])
+  }, [requestManager, closeRequest])
 
   React.useEffect(() => {
     requestManager.registerCollectionChangeHandler((removedIds) => {
@@ -77,14 +100,9 @@ export default function RequestPage(): React.JSX.Element {
   }, [requestManager])
 
   const addRequest = (): void => {
-    const id = uuid.v4()
-    const newReq: Request = {
-      id,
-      request: { method: HTTPMethod.GET, url: '' },
-      type: RequestType.HTTP
-    }
+    const newReq = createEmptyRequest()
     setRequests((t) => [...t, newReq])
-    setActiveId(id)
+    setActiveId(newReq.id)
   }
 
   const handleRename = (id: string, title: string): void => {
@@ -110,37 +128,45 @@ export default function RequestPage(): React.JSX.Element {
   const selectRequest = (id: string): void => setActiveId(id)
 
   const handleChange = (updatedRequest: Request): void => {
-    setRequests((ts) => ts.map((t) => (t.id === activeId ? updatedRequest : t)))
+    setRequests((ts) => ts.map((t) => (t.id === updatedRequest.id ? updatedRequest : t)))
   }
 
   const handleSend = async (): Promise<void> => {
-    if (sendingRef.current[activeId]) {
+    const currentActiveId = activeIdRef.current
+    if (sendingRef.current[currentActiveId]) {
       return
     }
-    sendingRef.current[activeId] = true
+    sendingRef.current[currentActiveId] = true
+
     try {
-      const request = requests.find((t) => t.id === activeId)
+      const request = requestsRef.current.find((t) => t.id === currentActiveId)
       if (!request) {
         return
       }
-      const resp = await window.api.sendRequest(activeId, request?.request)
-      setRequests((ts) => ts.map((t) => (t.id === activeId ? { ...t, response: resp } : t)))
-      const req = requests.find((t) => t.id === activeId)
+
+      const resp = await window.api.sendRequest(currentActiveId, request.request)
+      const requestWithResponse: Request = { ...request, response: resp }
+      setRequests((ts) =>
+        ts.map((t) =>
+          t.id === currentActiveId ? { ...requestWithResponse, request: t.request } : t
+        )
+      )
+
       try {
-        if (req) {
-          requestManager.addHistory(req)
-        }
+        requestManager.addHistory(requestWithResponse)
       } catch (e) {
         console.error(e)
       }
     } finally {
-      delete sendingRef.current[activeId]
+      delete sendingRef.current[currentActiveId]
     }
   }
 
   const handleCancel = (id: string): void => {
     window.api.abortRequest(id)
   }
+
+  const activeRequest = requests.find((t) => t.id === activeId) || requests[0]
 
   return (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
@@ -155,8 +181,8 @@ export default function RequestPage(): React.JSX.Element {
       />
       <Box sx={{ flex: 1, minHeight: 0 }}>
         <RequestPanel
-          id={activeId}
-          request={requests.find((t) => t.id === activeId)!}
+          id={activeRequest.id}
+          request={activeRequest}
           onChange={handleChange}
           onSend={handleSend}
           onCancel={handleCancel}

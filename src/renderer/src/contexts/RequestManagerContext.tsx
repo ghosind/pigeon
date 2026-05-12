@@ -133,7 +133,8 @@ export const RequestManagerProvider: React.FC<React.PropsWithChildren> = ({ chil
 
       const oldIds = collectRequestIds(s, [])
       const newIds = collectRequestIds(newNodes, [])
-      const removedIds = oldIds.filter((x) => !newIds.includes(x))
+      const newIdSet = new Set(newIds)
+      const removedIds = oldIds.filter((x) => !newIdSet.has(x))
 
       if (removedIds.length && collectionChangeHandler.current) {
         setTimeout(
