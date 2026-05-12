@@ -262,6 +262,78 @@ export const RequestManagerProvider: React.FC<React.PropsWithChildren> = ({ chil
     setHistory([])
   }
 
+  const searchCollections = async (keyword: string, limit?: number): Promise<CollectionNode[]> => {
+    const q = (keyword || '').trim().toLowerCase()
+    if (!q) {
+      return collections
+    }
+
+    try {
+      if (typeof window !== 'undefined' && window.api?.searchCollections) {
+        const res = await window.api.searchCollections(keyword, limit)
+        if (res?.ok && Array.isArray(res.result)) {
+          return res.result
+        }
+      }
+    } catch (err) {
+      console.error('Failed to search collections from sqlite:', err)
+    }
+
+    const filterNodes = (nodes: CollectionNode[]): CollectionNode[] => {
+      const result: CollectionNode[] = []
+      for (const n of nodes) {
+        if (n.type === 'folder') {
+          const title = (n.title || '').toLowerCase()
+          if (title.includes(q)) {
+            result.push(n)
+            continue
+          }
+
+          const children = filterNodes(n.children)
+          if (children.length > 0) {
+            result.push({ ...n, children })
+          }
+          continue
+        }
+
+        const title = (n.request?.title || '').toLowerCase()
+        const method = (n.request?.request?.method || '').toString().toLowerCase()
+        const url = (n.request?.request?.url || '').toLowerCase()
+        if (title.includes(q) || method.includes(q) || url.includes(q)) {
+          result.push(n)
+        }
+      }
+
+      return result
+    }
+
+    return filterNodes(collections)
+  }
+
+  const searchHistory = async (keyword: string, limit?: number): Promise<RequestHistory[]> => {
+    const q = (keyword || '').trim().toLowerCase()
+    if (!q) {
+      return history
+    }
+
+    try {
+      if (typeof window !== 'undefined' && window.api?.searchHistory) {
+        const res = await window.api.searchHistory(keyword, limit)
+        if (res?.ok && Array.isArray(res.result)) {
+          return res.result
+        }
+      }
+    } catch (err) {
+      console.error('Failed to search history from sqlite:', err)
+    }
+
+    return history.filter((h) => {
+      const url = (h.request.url || '').toString().toLowerCase()
+      const method = (h.request.method || '').toString().toLowerCase()
+      return url.includes(q) || method.includes(q)
+    })
+  }
+
   const registerOpenHandler = (h: OpenHandler | null): void => {
     openHandler.current = h
   }
@@ -296,6 +368,8 @@ export const RequestManagerProvider: React.FC<React.PropsWithChildren> = ({ chil
         exportNode,
         addHistory,
         clearHistory,
+        searchCollections,
+        searchHistory,
         openRequest,
         closeCurrent,
         registerOpenHandler,

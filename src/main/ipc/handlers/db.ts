@@ -6,11 +6,18 @@ import {
   IPC_SETTINGS_LOAD,
   IPC_COLLECTIONS_SAVE,
   IPC_COLLECTIONS_LOAD,
+  IPC_COLLECTIONS_SEARCH,
   IPC_HISTORY_SAVE,
-  IPC_HISTORY_LOAD
+  IPC_HISTORY_LOAD,
+  IPC_HISTORY_SEARCH
 } from '@shared/constants/channels'
-import { saveCollections, loadCollections, ensureCollectionsStore } from '../../db/collection'
-import { saveHistory, loadHistory, ensureHistoryStore } from '../../db/history'
+import {
+  saveCollections,
+  loadCollections,
+  searchCollections,
+  ensureCollectionsStore
+} from '../../db/collection'
+import { saveHistory, loadHistory, ensureHistoryStore, searchHistory } from '../../db/history'
 import { CollectionNode, RequestHistory } from '@shared/types'
 
 export function registerDbHandlers(ipc: IpcMain): void {
@@ -63,6 +70,15 @@ export function registerDbHandlers(ipc: IpcMain): void {
     }
   })
 
+  ipc.handle(IPC_COLLECTIONS_SEARCH, async (_ev, keyword: string, limit?: number) => {
+    try {
+      const data = await searchCollections(keyword, limit)
+      return { ok: true, result: data }
+    } catch (err: unknown) {
+      return { ok: false, error: (err as Error)?.message ?? String(err) }
+    }
+  })
+
   ipc.handle(IPC_HISTORY_SAVE, async (_ev, history: RequestHistory[]) => {
     try {
       await saveHistory(history)
@@ -75,6 +91,15 @@ export function registerDbHandlers(ipc: IpcMain): void {
   ipc.handle(IPC_HISTORY_LOAD, async () => {
     try {
       const data = await loadHistory()
+      return { ok: true, result: data }
+    } catch (err: unknown) {
+      return { ok: false, error: (err as Error)?.message ?? String(err) }
+    }
+  })
+
+  ipc.handle(IPC_HISTORY_SEARCH, async (_ev, keyword: string, limit?: number) => {
+    try {
+      const data = await searchHistory(keyword, limit)
       return { ok: true, result: data }
     } catch (err: unknown) {
       return { ok: false, error: (err as Error)?.message ?? String(err) }

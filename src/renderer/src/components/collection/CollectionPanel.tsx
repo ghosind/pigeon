@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import * as uuid from 'uuid'
 import { Box, IconButton, List, Tooltip, useTheme, Paper, TextField } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
@@ -16,7 +16,8 @@ export default function CollectionPanel(): React.JSX.Element {
     addRequestToFolder,
     openRequest,
     renameNode,
-    exportNode
+    exportNode,
+    searchCollections
   } = useRequestManager()
   const { t } = useI18n()
   const theme = useTheme()
@@ -39,34 +40,34 @@ export default function CollectionPanel(): React.JSX.Element {
   const [renameOpen, setRenameOpen] = useState(false)
   const [renameTarget, setRenameTarget] = useState<CollectionNode | null>(null)
   const [search, setSearch] = useState('')
+  const [searchResultNodes, setSearchResultNodes] = useState<CollectionNode[] | null>(null)
+  const searchSeq = useRef(0)
+  const searchKeyword = search.trim()
+  const displayNodes = searchKeyword ? (searchResultNodes ?? []) : collections
 
-  const filterNodes = (nodes: CollectionNode[], q: string): CollectionNode[] => {
-    if (!q) return nodes
-    const lower = q.toLowerCase()
-
-    const res: CollectionNode[] = []
-    for (const n of nodes) {
-      if (n.type === 'folder') {
-        const title = n.title || ''
-        if (title.toLowerCase().includes(lower)) {
-          res.push(n)
-          continue
-        }
-
-        const children = filterNodes(n.children || [], q)
-        if (children.length > 0) {
-          res.push({ ...n, children })
-        }
-      } else {
-        const title = n.request?.title || ''
-        if (title.toLowerCase().includes(lower)) {
-          res.push(n)
-        }
-      }
+  useEffect(() => {
+    const q = searchKeyword
+    const seq = ++searchSeq.current
+    if (!q) {
+      return
     }
 
-    return res
-  }
+    const timer = window.setTimeout(async () => {
+      try {
+        const result = await searchCollections(q, 500)
+        if (seq === searchSeq.current) {
+          setSearchResultNodes(result)
+        }
+      } catch (err) {
+        console.error('Failed to search collections:', err)
+        if (seq === searchSeq.current) {
+          setSearchResultNodes([])
+        }
+      }
+    }, 180)
+
+    return () => window.clearTimeout(timer)
+  }, [searchKeyword, searchCollections])
 
   const handleAddRequestTo = (parentId: string | null): void => {
     const newReq: Request = {
@@ -156,7 +157,7 @@ export default function CollectionPanel(): React.JSX.Element {
 
         <List sx={{ flex: 1, overflow: 'auto', background: 'transparent' }}>
           <CollectionTree
-            nodes={filterNodes(collections || [], search)}
+            nodes={displayNodes || []}
             onOpenRequest={handleOpen}
             onRemove={handleRemove}
             onAddRequest={handleAddRequestTo}

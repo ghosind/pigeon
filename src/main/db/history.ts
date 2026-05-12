@@ -152,6 +152,55 @@ ORDER BY timestamp DESC`)
   return result
 }
 
+export async function searchHistory(keyword: string, limit = 200): Promise<RequestHistory[]> {
+  const q = (keyword || '').trim().toLowerCase()
+  if (!q) {
+    return loadHistory()
+  }
+
+  const normalizedLimit = Number.isFinite(limit)
+    ? Math.max(1, Math.min(1000, Math.floor(limit)))
+    : 200
+
+  const likeExpr = `%${q}%`
+  const rows = all<HistoryRecordRow>(
+    `SELECT history_id, request_id, request_type, method, url, status_code, has_response, timestamp, request_payload, response_payload
+FROM history
+WHERE lower(coalesce(url, '')) LIKE ?
+   OR lower(coalesce(method, '')) LIKE ?
+   OR lower(coalesce(request_id, '')) LIKE ?
+ORDER BY timestamp DESC
+LIMIT ?`,
+    [likeExpr, likeExpr, likeExpr, normalizedLimit]
+  )
+
+  if (!rows.length) {
+    return []
+  }
+
+  const result: RequestHistory[] = []
+  for (const row of rows) {
+    try {
+      const request = JSON.parse(row.request_payload)
+      const response =
+        row.has_response && row.response_payload ? JSON.parse(row.response_payload) : undefined
+
+      result.push({
+        id: row.history_id,
+        requestId: row.request_id,
+        type: row.request_type as RequestHistory['type'],
+        timestamp: row.timestamp,
+        request,
+        response
+      })
+    } catch (err) {
+      console.error(`Failed to parse history payload for item ${row.history_id}:`, err)
+    }
+  }
+
+  return result
+}
+
 export async function ensureHistoryStore(): Promise<void> {
   await initHistoryTable()
 }

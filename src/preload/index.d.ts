@@ -9,8 +9,16 @@ interface RequestAPI {
   loadSettings: () => Promise<{ ok: boolean; result?: Record<string, string>; error?: string }>
   saveCollections: (collections: CollectionNode[]) => Promise<{ ok: boolean; error?: string }>
   loadCollections: () => Promise<{ ok: boolean; result?: CollectionNode[]; error?: string }>
+  searchCollections: (
+    keyword: string,
+    limit?: number
+  ) => Promise<{ ok: boolean; result?: CollectionNode[]; error?: string }>
   saveHistory: (history: RequestHistory[]) => Promise<{ ok: boolean; error?: string }>
   loadHistory: () => Promise<{ ok: boolean; result?: RequestHistory[]; error?: string }>
+  searchHistory: (
+    keyword: string,
+    limit?: number
+  ) => Promise<{ ok: boolean; result?: RequestHistory[]; error?: string }>
 }
 
 declare global {

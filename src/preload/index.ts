@@ -8,8 +8,10 @@ import {
   IPC_SETTINGS_LOAD,
   IPC_COLLECTIONS_SAVE,
   IPC_COLLECTIONS_LOAD,
+  IPC_COLLECTIONS_SEARCH,
   IPC_HISTORY_SAVE,
-  IPC_HISTORY_LOAD
+  IPC_HISTORY_LOAD,
+  IPC_HISTORY_SEARCH
 } from '@shared/constants/channels'
 import { CollectionNode, HTTPRequest, RequestHistory } from '@shared/types'
 
@@ -23,8 +25,12 @@ const api = {
   saveCollections: (collections: CollectionNode[]) =>
     ipcRenderer.invoke(IPC_COLLECTIONS_SAVE, collections),
   loadCollections: () => ipcRenderer.invoke(IPC_COLLECTIONS_LOAD),
+  searchCollections: (keyword: string, limit?: number) =>
+    ipcRenderer.invoke(IPC_COLLECTIONS_SEARCH, keyword, limit),
   saveHistory: (history: RequestHistory[]) => ipcRenderer.invoke(IPC_HISTORY_SAVE, history),
-  loadHistory: () => ipcRenderer.invoke(IPC_HISTORY_LOAD)
+  loadHistory: () => ipcRenderer.invoke(IPC_HISTORY_LOAD),
+  searchHistory: (keyword: string, limit?: number) =>
+    ipcRenderer.invoke(IPC_HISTORY_SEARCH, keyword, limit)
 }
 
 if (process.contextIsolated) {

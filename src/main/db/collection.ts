@@ -169,6 +169,10 @@ export async function loadCollections(): Promise<CollectionNode[]> {
   const rows = all<CollectionRecordRow>(`SELECT node_id, parent_id, sort_order, node_type, payload
 FROM collections
 ORDER BY sort_order ASC`)
+  return buildCollectionTree(rows)
+}
+
+function buildCollectionTree(rows: CollectionRecordRow[]): CollectionNode[] {
   if (!rows.length) {
     return []
   }
@@ -235,6 +239,64 @@ ORDER BY sort_order ASC`)
     .filter((node): node is CollectionNode => Boolean(node))
 
   return roots
+}
+
+export async function searchCollections(keyword: string, limit = 200): Promise<CollectionNode[]> {
+  const q = (keyword || '').trim().toLowerCase()
+  if (!q) {
+    return loadCollections()
+  }
+
+  const normalizedLimit = Number.isFinite(limit)
+    ? Math.max(1, Math.min(1000, Math.floor(limit)))
+    : 200
+  const likeExpr = `%${q}%`
+
+  const rows = all<CollectionRecordRow>(
+    `WITH RECURSIVE
+matched AS (
+  SELECT node_id, parent_id, node_type
+  FROM collections
+  WHERE lower(coalesce(title, '')) LIKE ?
+     OR lower(coalesce(request_method, '')) LIKE ?
+     OR lower(coalesce(request_url, '')) LIKE ?
+  ORDER BY sort_order ASC
+  LIMIT ?
+),
+ancestors(node_id, parent_id) AS (
+  SELECT node_id, parent_id FROM matched
+  UNION
+  SELECT c.node_id, c.parent_id
+  FROM collections c
+  JOIN ancestors a ON c.node_id = a.parent_id
+),
+matched_folders(node_id) AS (
+  SELECT node_id FROM matched WHERE node_type = 'folder'
+),
+descendants(node_id, parent_id) AS (
+  SELECT c.node_id, c.parent_id
+  FROM collections c
+  JOIN matched_folders mf ON c.parent_id = mf.node_id
+  UNION
+  SELECT c.node_id, c.parent_id
+  FROM collections c
+  JOIN descendants d ON c.parent_id = d.node_id
+),
+selected(node_id) AS (
+  SELECT node_id FROM matched
+  UNION
+  SELECT node_id FROM ancestors
+  UNION
+  SELECT node_id FROM descendants
+)
+SELECT c.node_id, c.parent_id, c.sort_order, c.node_type, c.payload
+FROM collections c
+WHERE c.node_id IN (SELECT node_id FROM selected)
+ORDER BY c.sort_order ASC`,
+    [likeExpr, likeExpr, likeExpr, normalizedLimit]
+  )
+
+  return buildCollectionTree(rows)
 }
 
 export async function ensureCollectionsStore(): Promise<void> {
