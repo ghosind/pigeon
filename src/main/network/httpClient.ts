@@ -7,6 +7,30 @@ import { promises as fs } from 'fs'
 
 const DefaultUserAgent = `Pigeon/${process.env.npm_package_version}`
 
+const normalizeResponseHeaders = (
+  headers: Record<string, string | string[] | undefined>
+): Record<string, string> => {
+  const result: Record<string, string> = {}
+  for (const [key, value] of Object.entries(headers)) {
+    if (value == null) {
+      continue
+    }
+    result[key] = Array.isArray(value) ? value.join(', ') : value
+  }
+  return result
+}
+
+const getResponseSize = (headers: Record<string, string>, body: string): number => {
+  const contentLength = headers['content-length']
+  if (typeof contentLength === 'string') {
+    const parsed = Number.parseInt(contentLength, 10)
+    if (Number.isFinite(parsed) && parsed >= 0) {
+      return parsed
+    }
+  }
+  return Buffer.byteLength(body, 'utf8')
+}
+
 const keyValuePairsToFormData = async (pairs: KeyValuePair[]): Promise<FormData> => {
   const formData = new FormData()
   for (const pair of pairs) {
@@ -142,22 +166,14 @@ export async function sendHttpRequest(
       signal
     })
 
-    let size: number | undefined = undefined
     const body = await res.body.text()
-    if (res.headers['content-length']) {
-      if (Array.isArray(res.headers['content-length'])) {
-        size = parseInt(res.headers['content-length'][0], 10)
-      } else {
-        size = parseInt(res.headers['content-length'] as string, 10)
-      }
-    } else {
-      size = body.length
-    }
+    const headers = normalizeResponseHeaders(res.headers)
+    const size = getResponseSize(headers, body)
 
     return {
       status: res.statusCode,
       statusText: STATUS_CODES[res.statusCode] || '',
-      headers: res.headers as Record<string, string>,
+      headers,
       body,
       size,
       duration: Date.now() - start
