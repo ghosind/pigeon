@@ -36,6 +36,7 @@ export default function Sidebar(): React.JSX.Element {
   const iconColor = theme.palette.text.secondary
   const selectedBg = theme.palette.action.selected
   const STORAGE_KEY = 'pigeon:sidebarCollapsed'
+  const [settingsLoaded, setSettingsLoaded] = React.useState(false)
   const [collapsed, setCollapsed] = React.useState<boolean>(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY)
@@ -46,6 +47,10 @@ export default function Sidebar(): React.JSX.Element {
   })
 
   React.useEffect(() => {
+    if (!settingsLoaded) {
+      return
+    }
+
     try {
       localStorage.setItem(STORAGE_KEY, collapsed ? '1' : '0')
     } catch (e) {
@@ -60,7 +65,7 @@ export default function Sidebar(): React.JSX.Element {
     } catch (err) {
       console.error('Failed to save sidebar collapsed to sqlite:', err)
     }
-  }, [collapsed])
+  }, [collapsed, settingsLoaded])
 
   React.useEffect(() => {
     async function load(): Promise<void> {
@@ -74,6 +79,8 @@ export default function Sidebar(): React.JSX.Element {
         }
       } catch (err) {
         console.error('Failed to load sidebar collapsed from sqlite:', err)
+      } finally {
+        setSettingsLoaded(true)
       }
     }
 
