@@ -1,21 +1,30 @@
-import { HTTPRequest, HTTPResponse } from '@shared/types'
+import { HTTPRequestConfig, HTTPResponse } from '@shared/types'
 import { InterceptorManager } from './interceptor'
 import { sendHttpRequest } from './httpClient'
 
-const DEFAULT_TIMEOUT_MS = 15000
+const DEFAULT_TIMEOUT_MS = 30000
 
 export class RequestEngine {
   private interceptors = new InterceptorManager()
   private controllers = new Map<string, AbortController>()
 
-  async send(id: string, req: HTTPRequest): Promise<HTTPResponse> {
+  /**
+   * Send an HTTP request with timeout and abort support.
+   * @param id - Unique request identifier for cancellation
+   * @param req - The request configuration
+   * @returns HTTP response
+   */
+  async send(id: string, req: HTTPRequestConfig): Promise<HTTPResponse> {
+    // Abort any existing request with the same ID
     this.controllers.get(id)?.abort()
 
     const controller = new AbortController()
     this.controllers.set(id, controller)
 
     const timeoutMs =
-      typeof req.timeout === 'number' && req.timeout > 0 ? req.timeout : DEFAULT_TIMEOUT_MS
+      typeof req.settings?.timeout === 'number' && req.settings.timeout > 0
+        ? req.settings.timeout
+        : DEFAULT_TIMEOUT_MS
 
     const timeout = setTimeout(() => {
       controller.abort()
@@ -31,6 +40,7 @@ export class RequestEngine {
     }
   }
 
+  /** Abort a pending request by ID. */
   abort(id: string): void {
     this.controllers.get(id)?.abort()
     this.controllers.delete(id)

@@ -1,383 +1,255 @@
-import React, { useEffect, useRef, useState } from 'react'
-import * as uuid from 'uuid'
-import { Request, RequestHistory, CollectionNode } from '@shared/types'
-import { RequestManagerContext, OpenHandler, OpenRequestOptions } from './useRequestManager'
+/**
+ * RequestManagerProvider — global state container for the Pigeon app.
+ *
+ * Manages collections, history, environments, config, and tab coordination.
+ * All persistent state syncs to SQLite via the preload IPC bridge.
+ */
+
+import React, { useEffect, useRef, useState, useCallback } from 'react'
+import type {
+  RequestModel,
+  Collection,
+  CollectionFolder,
+  Environment,
+  RequestHistoryRecord,
+  SystemConfig
+} from '@shared/types'
+import {
+  RequestManagerContext,
+  RequestManagerContextValue,
+  OpenRequestHandler
+} from './useRequestManager'
 
 export const RequestManagerProvider: React.FC<React.PropsWithChildren> = ({ children }) => {
-  const [collections, setCollections] = useState<CollectionNode[]>([])
-  const [history, setHistory] = useState<RequestHistory[]>([])
-  const openHandler = useRef<OpenHandler | null>(null)
-  const closeHandler = useRef<(() => void) | null>(null)
-  const collectionChangeHandler = useRef<((ids: string[]) => void) | null>(null)
-  const collectionsHydrated = useRef(false)
-  const historyHydrated = useRef(false)
+  const [collections, setCollections] = useState<Collection[]>([])
+  const [history, setHistory] = useState<RequestHistoryRecord[]>([])
+  const [environments, setEnvironments] = useState<Environment[]>([])
+  const [activeEnvironmentId, setActiveEnvironmentId] = useState<string | null>(null)
+  const [variableMap, setVariableMap] = useState<Record<string, string>>({})
+  const [config, setConfig] = useState<SystemConfig | null>(null)
 
+  const openHandler = useRef<OpenRequestHandler | null>(null)
+  const closeHandler = useRef<(() => void) | null>(null)
+  const hydrated = useRef(false)
+
+  // Initial hydration
   useEffect(() => {
     async function hydrate(): Promise<void> {
-      if (typeof window === 'undefined' || !window.api) {
-        collectionsHydrated.current = true
-        historyHydrated.current = true
-        return
-      }
-
       try {
-        const [collectionsRes, historyRes] = await Promise.all([
-          window.api.loadCollections(),
-          window.api.loadHistory()
+        const [configRes, collRes, envRes, histRes, varRes] = await Promise.all([
+          window.api?.getConfig(),
+          window.api?.listCollections(),
+          window.api?.listEnvironments(),
+          window.api?.listHistory(),
+          window.api?.resolveVariables()
         ])
 
-        if (collectionsRes?.ok && Array.isArray(collectionsRes.result)) {
-          setCollections(collectionsRes.result)
+        if (configRes?.ok && configRes.data) setConfig(configRes.data)
+        if (collRes?.ok && collRes.data) setCollections(collRes.data)
+        if (envRes?.ok && envRes.data) {
+          setEnvironments(envRes.data)
+          const active = envRes.data.find((e) => e.isActive)
+          if (active) setActiveEnvironmentId(active.id)
         }
-        if (historyRes?.ok && Array.isArray(historyRes.result)) {
-          setHistory(historyRes.result)
-        }
+        if (histRes?.ok && histRes.data) setHistory(histRes.data)
+        if (varRes?.ok && varRes.data) setVariableMap(varRes.data)
       } catch (err) {
-        console.error('Failed to hydrate request manager data from sqlite:', err)
+        console.error('[RequestManager] Hydration failed:', err)
       } finally {
-        collectionsHydrated.current = true
-        historyHydrated.current = true
+        hydrated.current = true
       }
     }
-
     void hydrate()
   }, [])
 
+  // Persist config changes
   useEffect(() => {
-    if (!collectionsHydrated.current) {
-      return
-    }
+    if (!hydrated.current || !config) return
+    window.api
+      ?.saveConfig(config)
+      .catch((err) => console.error('[RequestManager] Save config failed:', err))
+  }, [config])
 
-    void (async () => {
+  const setActiveEnvironment = useCallback(async (id: string) => {
+    setActiveEnvironmentId(id)
+    try {
+      await window.api?.activateEnvironment(id)
+      const varRes = await window.api?.resolveVariables()
+      if (varRes?.ok && varRes.data) setVariableMap(varRes.data)
+    } catch (err) {
+      console.error('[RequestManager] Activate env failed:', err)
+    }
+  }, [])
+
+  const openRequest: OpenRequestHandler = useCallback((req, options) => {
+    openHandler.current?.(req, options)
+  }, [])
+
+  const registerOpenHandler = useCallback((handler: OpenRequestHandler | null) => {
+    openHandler.current = handler
+  }, [])
+
+  const closeCurrentTab = useCallback(() => {
+    closeHandler.current?.()
+  }, [])
+
+  const registerCloseHandler = useCallback((handler: (() => void) | null) => {
+    closeHandler.current = handler
+  }, [])
+
+  const addFolder = useCallback(
+    async (title: string, collectionId: string, parentId?: string | null) => {
       try {
-        if (typeof window !== 'undefined' && window.api?.saveCollections) {
-          await window.api.saveCollections(collections)
+        const res = await window.api?.createFolder(collectionId, title, parentId)
+        if (res?.ok && res.data) {
+          const folder = res.data as CollectionFolder
+          setCollections((prev) =>
+            prev.map((c) =>
+              c.id === collectionId ? { ...c, folders: [...(c.folders || []), folder] } : c
+            )
+          )
         }
       } catch (err) {
-        console.error('Failed to save collections to sqlite:', err)
+        console.error('[RequestManager] Add folder failed:', err)
       }
-    })()
-  }, [collections])
-
-  useEffect(() => {
-    if (!historyHydrated.current) {
-      return
-    }
-
-    void (async () => {
-      try {
-        if (typeof window !== 'undefined' && window.api?.saveHistory) {
-          await window.api.saveHistory(history)
-        }
-      } catch (err) {
-        console.error('Failed to save history to sqlite:', err)
-      }
-    })()
-  }, [history])
-
-  const addFolder = (title: string, parentId: string | null = null): void => {
-    const folder: CollectionNode = { id: uuid.v4(), type: 'folder', title, children: [] }
-    if (!parentId) {
-      setCollections((s) => [...s, folder])
-      return
-    }
-
-    const insert = (nodes: CollectionNode[]): CollectionNode[] =>
-      nodes.map((n) => {
-        if (n.type === 'folder') {
-          if (n.id === parentId) return { ...n, children: [...n.children, folder] }
-          return { ...n, children: insert(n.children) }
-        }
-        return n
-      })
-
-    setCollections((s) => insert(s))
-  }
-
-  const addRequestToFolder = (parentId: string | null, c: Request): void => {
-    const storedReq = { ...c, isInCollection: true }
-    const item: CollectionNode = { id: c.id, type: 'request', request: storedReq }
-
-    let found = false
-    const update = (nodes: CollectionNode[]): CollectionNode[] =>
-      nodes.map((n) => {
-        if (n.type === 'request') {
-          if (n.id === c.id) {
-            found = true
-            return { ...n, request: storedReq }
-          }
-          return n
-        }
-
-        return { ...n, children: update(n.children) }
-      })
-
-    setCollections((s) => {
-      const updated = update(s)
-      if (found) return updated
-
-      if (!parentId) {
-        return [...s, item]
-      }
-
-      const insert = (nodes: CollectionNode[]): CollectionNode[] =>
-        nodes.map((n) => {
-          if (n.type === 'folder') {
-            if (n.id === parentId) return { ...n, children: [...n.children, item] }
-            return { ...n, children: insert(n.children) }
-          }
-          return n
-        })
-
-      return insert(s)
-    })
-  }
-
-  const removeNode = (id: string): void => {
-    const remove = (nodes: CollectionNode[]): CollectionNode[] =>
-      nodes
-        .filter((n) => n.id !== id)
-        .map((n) => (n.type === 'folder' ? { ...n, children: remove(n.children) } : n))
-
-    setCollections((s) => {
-      const newNodes = remove(s)
-
-      const collectRequestIds = (nodes: CollectionNode[], acc: string[] = []): string[] => {
-        for (const n of nodes) {
-          if (n.type === 'request') {
-            acc.push(n.id)
-          }
-          if (n.type === 'folder') {
-            collectRequestIds(n.children, acc)
-          }
-        }
-        return acc
-      }
-
-      const oldIds = collectRequestIds(s, [])
-      const newIds = collectRequestIds(newNodes, [])
-      const newIdSet = new Set(newIds)
-      const removedIds = oldIds.filter((x) => !newIdSet.has(x))
-
-      if (removedIds.length && collectionChangeHandler.current) {
-        setTimeout(
-          () => collectionChangeHandler.current && collectionChangeHandler.current(removedIds),
-          0
-        )
-      }
-
-      return newNodes
-    })
-  }
-
-  const renameNode = (id: string, newName: string): void => {
-    const rename = (nodes: CollectionNode[]): CollectionNode[] =>
-      nodes.map((n) => {
-        if (n.id === id) {
-          if (n.type === 'folder') {
-            return { ...n, title: newName }
-          }
-          const req = { ...n.request, title: newName }
-          openRequest(req, { newTab: false, active: false })
-          return { ...n, request: req }
-        }
-
-        if (n.type === 'folder') {
-          return { ...n, children: rename(n.children) }
-        }
-        return n
-      })
-
-    setCollections((s) => rename(s))
-  }
-
-  const findNode = (id: string, nodes: CollectionNode[]): CollectionNode | null => {
-    for (const n of nodes) {
-      if (n.id === id) {
-        return n
-      }
-      if (n.type === 'folder') {
-        const found = findNode(id, n.children)
-        if (found) {
-          return found
-        }
-      }
-    }
-    return null
-  }
-
-  const exportNode = (id: string): void => {
-    try {
-      const node = findNode(id, collections)
-      if (!node) {
-        return
-      }
-      const text = JSON.stringify(node, null, 2)
-      const blob = new Blob([text], { type: 'application/json' })
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `collection-${id}.json`
-      document.body.appendChild(a)
-      a.click()
-      a.remove()
-      URL.revokeObjectURL(url)
-    } catch (e) {
-      console.error(e)
-    }
-  }
-
-  const addHistory = (req: Request): void => {
-    const saveResponse = (() => {
-      try {
-        const v = localStorage.getItem('pigeon:history.saveResponse')
-        return v === null ? true : v === 'true'
-      } catch (e: unknown) {
-        console.error('Failed to read history.saveResponse setting', e)
-        return true
-      }
-    })()
-
-    const item: RequestHistory = {
-      id: uuid.v4(),
-      requestId: req.id,
-      type: req.type,
-      request: req.request,
-      response: saveResponse ? req.response : undefined,
-      timestamp: Date.now()
-    }
-    setHistory((s) => {
-      const next = [item, ...s]
-      return next
-    })
-  }
-
-  const openRequest = (req: Request, opts?: OpenRequestOptions): void => {
-    if (openHandler.current) {
-      openHandler.current(req, opts)
-    }
-  }
-
-  const clearHistory = (): void => {
-    setHistory([])
-  }
-
-  const searchCollections = async (keyword: string, limit?: number): Promise<CollectionNode[]> => {
-    const q = (keyword || '').trim().toLowerCase()
-    if (!q) {
-      return collections
-    }
-
-    try {
-      if (typeof window !== 'undefined' && window.api?.searchCollections) {
-        const res = await window.api.searchCollections(keyword, limit)
-        if (res?.ok && Array.isArray(res.result)) {
-          return res.result
-        }
-      }
-    } catch (err) {
-      console.error('Failed to search collections from sqlite:', err)
-    }
-
-    const filterNodes = (nodes: CollectionNode[]): CollectionNode[] => {
-      const result: CollectionNode[] = []
-      for (const n of nodes) {
-        if (n.type === 'folder') {
-          const title = (n.title || '').toLowerCase()
-          if (title.includes(q)) {
-            result.push(n)
-            continue
-          }
-
-          const children = filterNodes(n.children)
-          if (children.length > 0) {
-            result.push({ ...n, children })
-          }
-          continue
-        }
-
-        const title = (n.request?.title || '').toLowerCase()
-        const method = (n.request?.request?.method || '').toString().toLowerCase()
-        const url = (n.request?.request?.url || '').toLowerCase()
-        if (title.includes(q) || method.includes(q) || url.includes(q)) {
-          result.push(n)
-        }
-      }
-
-      return result
-    }
-
-    return filterNodes(collections)
-  }
-
-  const searchHistory = async (keyword: string, limit?: number): Promise<RequestHistory[]> => {
-    const q = (keyword || '').trim().toLowerCase()
-    if (!q) {
-      return history
-    }
-
-    try {
-      if (typeof window !== 'undefined' && window.api?.searchHistory) {
-        const res = await window.api.searchHistory(keyword, limit)
-        if (res?.ok && Array.isArray(res.result)) {
-          return res.result
-        }
-      }
-    } catch (err) {
-      console.error('Failed to search history from sqlite:', err)
-    }
-
-    return history.filter((h) => {
-      const url = (h.request.url || '').toString().toLowerCase()
-      const method = (h.request.method || '').toString().toLowerCase()
-      return url.includes(q) || method.includes(q)
-    })
-  }
-
-  const registerOpenHandler = (h: OpenHandler | null): void => {
-    openHandler.current = h
-  }
-
-  const registerCloseHandler = (h: (() => void) | null): void => {
-    closeHandler.current = h
-  }
-
-  const closeCurrent = (): void => {
-    try {
-      if (closeHandler.current) {
-        closeHandler.current()
-      }
-    } catch (e) {
-      console.error(e)
-    }
-  }
-
-  const registerCollectionChangeHandler = (h: ((ids: string[]) => void) | null): void => {
-    collectionChangeHandler.current = h
-  }
-
-  return (
-    <RequestManagerContext.Provider
-      value={{
-        collections,
-        history,
-        addFolder,
-        addRequestToFolder,
-        removeNode,
-        renameNode,
-        exportNode,
-        addHistory,
-        clearHistory,
-        searchCollections,
-        searchHistory,
-        openRequest,
-        closeCurrent,
-        registerOpenHandler,
-        registerCloseHandler,
-        registerCollectionChangeHandler
-      }}
-    >
-      {children}
-    </RequestManagerContext.Provider>
+    },
+    []
   )
+
+  const addRequestToCollection = useCallback(
+    async (request: RequestModel, collectionId: string, folderId?: string | null) => {
+      try {
+        const res = await window.api?.createRequest({
+          ...request,
+          collectionId,
+          folderId: folderId || undefined
+        })
+        if (res?.ok && res.data) {
+          const newReq = res.data as RequestModel
+          setCollections((prev) =>
+            prev.map((c) =>
+              c.id === collectionId ? { ...c, requests: [...(c.requests || []), newReq] } : c
+            )
+          )
+        }
+      } catch (err) {
+        console.error('[RequestManager] Add request failed:', err)
+      }
+    },
+    []
+  )
+
+  const removeCollectionNode = useCallback(async (id: string) => {
+    try {
+      await window.api?.deleteCollection(id).catch(() => {})
+      await window.api?.deleteFolder(id).catch(() => {})
+      await window.api?.deleteRequest(id).catch(() => {})
+      const res = await window.api?.listCollections()
+      if (res?.ok && res.data) setCollections(res.data)
+    } catch (err) {
+      console.error('[RequestManager] Remove node failed:', err)
+    }
+  }, [])
+
+  const renameCollectionNode = useCallback(async (id: string, newName: string) => {
+    try {
+      await window.api?.updateCollection(id, { name: newName }).catch(() => {})
+      await window.api?.updateFolder(id, { name: newName }).catch(() => {})
+      await window.api?.updateRequest(id, { name: newName }).catch(() => {})
+      const res = await window.api?.listCollections()
+      if (res?.ok && res.data) setCollections(res.data)
+    } catch (err) {
+      console.error('[RequestManager] Rename node failed:', err)
+    }
+  }, [])
+
+  const exportCollectionNode = useCallback(async (id: string) => {
+    try {
+      const res = await window.api?.exportCollection(id)
+      if (res?.ok && res.data) {
+        const blob = new Blob([JSON.stringify(res.data, null, 2)], { type: 'application/json' })
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `collection-${id}.json`
+        document.body.appendChild(a)
+        a.click()
+        a.remove()
+        URL.revokeObjectURL(url)
+      }
+    } catch (err) {
+      console.error('[RequestManager] Export node failed:', err)
+    }
+  }, [])
+
+  const searchCollections = useCallback(async (keyword: string) => {
+    try {
+      const res = await window.api?.globalSearch(keyword)
+      if (res?.ok && res.data) {
+        const data = res.data as { collections: Collection[] }
+        if (data.collections) setCollections(data.collections)
+      }
+    } catch (err) {
+      console.error('[RequestManager] Search collections failed:', err)
+    }
+  }, [])
+
+  const addHistory = useCallback(async (record: Partial<RequestHistoryRecord>) => {
+    try {
+      const res = await window.api?.saveHistory(record)
+      if (res?.ok && res.data) {
+        setHistory((prev) => [res.data as RequestHistoryRecord, ...prev])
+      }
+    } catch (err) {
+      console.error('[RequestManager] Add history failed:', err)
+    }
+  }, [])
+
+  const clearHistoryFn = useCallback(async () => {
+    try {
+      await window.api?.clearHistory()
+      setHistory([])
+    } catch (err) {
+      console.error('[RequestManager] Clear history failed:', err)
+    }
+  }, [])
+
+  const searchHistoryFn = useCallback(async (keyword: string) => {
+    try {
+      const res = await window.api?.searchHistory(keyword)
+      if (res?.ok && res.data) setHistory(res.data)
+    } catch (err) {
+      console.error('[RequestManager] Search history failed:', err)
+    }
+  }, [])
+
+  const value: RequestManagerContextValue = {
+    collections,
+    folders: new Map(),
+    setCollections,
+    history,
+    setHistory,
+    environments,
+    activeEnvironmentId,
+    setEnvironments,
+    setActiveEnvironment,
+    variableMap,
+    config,
+    setConfig,
+    openRequest,
+    closeCurrentTab,
+    registerOpenHandler,
+    registerCloseHandler,
+    addFolder,
+    addRequestToCollection,
+    removeCollectionNode,
+    renameCollectionNode,
+    exportCollectionNode,
+    searchCollections,
+    addHistory,
+    clearHistory: clearHistoryFn,
+    searchHistory: searchHistoryFn
+  }
+
+  return <RequestManagerContext.Provider value={value}>{children}</RequestManagerContext.Provider>
 }

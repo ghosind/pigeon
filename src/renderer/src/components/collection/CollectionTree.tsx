@@ -1,14 +1,16 @@
 import React from 'react'
-import { CollectionNode, Request } from '@shared/types'
+import type { Collection, CollectionFolder, RequestModel } from '@shared/types'
 import CollectionTreeNode from './CollectionTreeNode'
 
+type TreeNode = Collection | CollectionFolder
+
 type CollectionTreeProps = {
-  nodes: CollectionNode[]
-  onOpenRequest: (req: Request) => void
+  nodes: Collection[]
+  onOpenRequest: (req: RequestModel) => void
   onRemove: (id: string) => void
   onAddRequest: (parentId: string | null) => void
-  onEdit: (node: CollectionNode) => void
-  onAddFolder: (parentId: string | null) => void
+  onEdit: (node: TreeNode) => void
+  onAddFolder: (collectionId: string, parentId?: string | null) => void
   onExport: (id: string) => void
 }
 

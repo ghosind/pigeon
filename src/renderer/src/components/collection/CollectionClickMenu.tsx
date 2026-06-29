@@ -5,17 +5,19 @@ import DeleteIcon from '@mui/icons-material/Delete'
 import EditIcon from '@mui/icons-material/Edit'
 import FileDownloadIcon from '@mui/icons-material/FileDownload'
 import FolderOpenIcon from '@mui/icons-material/FolderOpen'
-import { CollectionNode } from '@shared/types'
+import type { Collection, CollectionFolder, RequestModel } from '@shared/types'
 import { useI18n } from '../../contexts/useI18n'
 
+type ClickMenuNode = Collection | CollectionFolder | RequestModel
+
 type CollectionClickMenuProps = {
-  node: CollectionNode
+  node: ClickMenuNode
   open: boolean
   anchor: { x: number; y: number } | null
   onRemove: (id: string) => void
   onAddRequest: (parentId: string | null) => void
-  onEdit: (node: CollectionNode) => void
-  onAddFolder: (parentId: string | null) => void
+  onEdit: (node: ClickMenuNode) => void
+  onAddFolder: (collectionId: string, parentId?: string | null) => void
   onExport: (id: string) => void
   onCloseMenu: () => void
 }
@@ -40,7 +42,7 @@ export default function CollectionClickMenu({
       anchorReference="anchorPosition"
       anchorPosition={anchor ? { top: anchor.y, left: anchor.x } : undefined}
     >
-      {node.type === 'folder' && (
+      {'folders' in node && (
         <>
           <MenuItem
             onClick={() => {

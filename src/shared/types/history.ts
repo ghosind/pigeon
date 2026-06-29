@@ -1,11 +1,17 @@
-import { HTTPRequest, HTTPResponse } from './http'
-import { RequestType } from './request'
+// =========================================================================
+// Request history record
+// =========================================================================
 
-export type RequestHistory = {
+import type { HTTPMethod } from './enums'
+
+export interface RequestHistoryRecord {
   id: string
-  requestId: string
-  timestamp: number
-  type: RequestType
-  request: HTTPRequest
-  response?: HTTPResponse
+  method: HTTPMethod
+  url: string
+  statusCode?: number
+  costTime?: number
+  requestSnapshot: string
+  responseSnapshot?: string
+  deleted: boolean
+  createTime: string
 }

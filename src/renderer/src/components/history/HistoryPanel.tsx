@@ -2,7 +2,7 @@ import React, { useMemo, useCallback, useEffect, useRef, useState } from 'react'
 import { Box, List, useTheme, Paper, TextField, Button } from '@mui/material'
 import { useRequestManager } from '@renderer/contexts/useRequestManager'
 import { useI18n } from '@renderer/contexts/useI18n'
-import { RequestHistory } from '@shared/types'
+import type { RequestHistoryRecord } from '@shared/types'
 import HistoryGroup from './HistoryGroup'
 
 export default function HistoryPanel(): React.JSX.Element {
@@ -10,7 +10,9 @@ export default function HistoryPanel(): React.JSX.Element {
   const theme = useTheme()
   const { t, lang } = useI18n()
   const [search, setSearch] = useState<string>('')
-  const [searchResultHistory, setSearchResultHistory] = useState<RequestHistory[] | null>(null)
+  const [searchResultHistory, setSearchResultHistory] = useState<RequestHistoryRecord[] | null>(
+    null
+  )
   const searchSeq = useRef(0)
   const searchKeyword = search.trim()
 
@@ -23,9 +25,9 @@ export default function HistoryPanel(): React.JSX.Element {
 
     const timer = window.setTimeout(async () => {
       try {
-        const result = await searchHistory(q, 500)
+        await searchHistory(q)
         if (seq === searchSeq.current) {
-          setSearchResultHistory(result)
+          // searchHistory updates state internally via context
         }
       } catch (err) {
         console.error('Failed to search history:', err)
@@ -63,16 +65,20 @@ export default function HistoryPanel(): React.JSX.Element {
     [lang, t]
   )
 
-  const groups = useMemo((): Array<{ key: string; items: RequestHistory[] }> => {
+  const groups = useMemo((): Array<{ key: string; items: RequestHistoryRecord[] }> => {
     const displayHistory = searchKeyword ? (searchResultHistory ?? []) : history
-    const map = new Map<string, RequestHistory[]>()
-    displayHistory.forEach((h: RequestHistory) => {
-      const key = formatGroupKey(new Date(h.timestamp))
+    const map = new Map<string, RequestHistoryRecord[]>()
+    displayHistory.forEach((h: RequestHistoryRecord) => {
+      const key = formatGroupKey(new Date(h.createTime))
       if (!map.has(key)) map.set(key, [])
       map.get(key)!.push(h)
     })
     const arr = Array.from(map.entries()).map(([key, items]) => ({ key, items }))
-    arr.sort((a, b) => (b.items[0].timestamp ?? 0) - (a.items[0].timestamp ?? 0))
+    arr.sort(
+      (a, b) =>
+        (new Date(b.items[0].createTime).getTime() ?? 0) -
+        (new Date(a.items[0].createTime).getTime() ?? 0)
+    )
     return arr
   }, [searchKeyword, searchResultHistory, history, formatGroupKey])
 

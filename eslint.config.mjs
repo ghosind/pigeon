@@ -25,7 +25,8 @@ export default defineConfig(
     },
     rules: {
       ...eslintPluginReactHooks.configs.recommended.rules,
-      ...eslintPluginReactRefresh.configs.vite.rules
+      ...eslintPluginReactRefresh.configs.vite.rules,
+      'max-statements-per-line': ['error', { max: 1 }]
     }
   },
   eslintConfigPrettier

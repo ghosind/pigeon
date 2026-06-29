@@ -1,13 +1,13 @@
 import { Box, Button, Select, MenuItem } from '@mui/material'
 import { SelectChangeEvent } from '@mui/material/Select'
 import { useI18n } from '../../contexts/useI18n'
-import { HTTPContentType } from '@shared/types'
+import { RawType } from '@shared/types'
 
 type RawControlsProps = {
   body: string
   onChange: (s: string) => void
-  language: HTTPContentType
-  setLanguage: (s: HTTPContentType) => void
+  language: RawType
+  setLanguage: (s: RawType) => void
 }
 
 export default function RawControls({
@@ -18,21 +18,18 @@ export default function RawControls({
 }: RawControlsProps): React.ReactElement {
   const { t } = useI18n()
   const prettify = (src = body): string => {
-    if (!src || language !== 'json') {
-      return src
-    }
-
+    if (!src || language !== RawType.JSON) return src
     try {
       const j = JSON.parse(src)
       return JSON.stringify(j, null, 2)
     } catch (e) {
-      console.error('Failed to format JSON:', e)
+      console.error('[RawControls] Failed to format JSON:', e)
       return src
     }
   }
 
   const handleLanguageChange = (ev: SelectChangeEvent<string>): void => {
-    setLanguage(ev.target.value as HTTPContentType)
+    setLanguage(ev.target.value as RawType)
   }
 
   return (

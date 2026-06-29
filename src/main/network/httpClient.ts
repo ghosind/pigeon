@@ -1,11 +1,26 @@
 import { request, Dispatcher, FormData, Headers } from 'undici'
 import { STATUS_CODES } from 'http'
-import { HTTPContentType, HTTPRequest, HTTPResponse, KeyValuePair } from '@shared/types'
+import { HTTPRequestConfig, HTTPResponse, KeyValuePair, BodyMode, AuthType } from '@shared/types'
 import { createAgent } from './agent'
 import { normalizeError } from './error'
 import { promises as fs } from 'fs'
+import path from 'path'
+import os from 'os'
 
-const DefaultUserAgent = `Pigeon/${process.env.npm_package_version}`
+const DefaultUserAgent = `Pigeon/${process.env.npm_package_version || '0.1.0'}`
+
+/** Validate that a file path is safe to read (no traversal outside home dir). */
+function isSafePath(filePath: string): boolean {
+  if (!filePath || filePath.includes('..')) {
+    return false
+  }
+  const resolved = path.resolve(filePath)
+  const homeDir = os.homedir()
+  // Allow paths under home directory and common temp directories
+  return (
+    resolved.startsWith(homeDir) || resolved.startsWith('/tmp') || resolved.startsWith(os.tmpdir())
+  )
+}
 
 const normalizeResponseHeaders = (
   headers: Record<string, string | string[] | undefined>
@@ -34,9 +49,7 @@ const getResponseSize = (headers: Record<string, string>, body: string): number 
 const keyValuePairsToFormData = async (pairs: KeyValuePair[]): Promise<FormData> => {
   const formData = new FormData()
   for (const pair of pairs) {
-    if (!pair.enabled) {
-      continue
-    }
+    if (pair.enabled === false || !pair.key) continue
 
     if (pair.type === 'file') {
       const content = await fs.readFile(pair.value)
@@ -54,10 +67,7 @@ function buildHeaders(pairs?: KeyValuePair[]): Headers {
   const headers = new Headers()
 
   for (const { key, value, enabled } of pairs || []) {
-    if (enabled === false || !key || value == null) {
-      continue
-    }
-
+    if (enabled === false || !key || value == null) continue
     headers.append(key, value)
   }
 
@@ -68,65 +78,83 @@ function buildHeaders(pairs?: KeyValuePair[]): Headers {
   return headers
 }
 
-const setContentType = (headers: Headers, contentType?: HTTPContentType): void => {
-  if (headers.has('content-type')) {
-    return
-  }
+/** Inject auth headers based on auth config. */
+function injectAuthHeaders(headers: Headers, auth: HTTPRequestConfig['auth']): void {
+  if (!auth || auth.type === AuthType.None) return
 
-  switch (contentType) {
-    case 'xml':
-      headers.set('content-type', 'application/xml')
+  switch (auth.type) {
+    case AuthType.Bearer:
+      if (auth.token && !headers.has('authorization')) {
+        headers.set('authorization', `Bearer ${auth.token}`)
+      }
       break
-    case 'urlencoded':
-      headers.set('content-type', 'application/x-www-form-urlencoded')
+    case AuthType.Basic: {
+      if (!headers.has('authorization')) {
+        const cred = `${auth.username || ''}:${auth.password || ''}`
+        const encoded = Buffer.from(cred).toString('base64')
+        headers.set('authorization', `Basic ${encoded}`)
+      }
       break
-    case 'text':
-      headers.set('content-type', 'text/plain')
-      break
-    default:
-      headers.set('content-type', 'application/json')
-      break
+    }
   }
 }
 
 const buildRequestOptions = async (
-  req: HTTPRequest
+  req: HTTPRequestConfig
 ): Promise<
   Omit<Dispatcher.RequestOptions<null>, 'origin' | 'path' | 'method'> & Dispatcher.DispatchOptions
 > => {
   let body: string | FormData | Buffer | Uint8Array<ArrayBuffer> | undefined = undefined
   const headers = buildHeaders(req.headers)
 
+  // Inject auth
+  injectAuthHeaders(headers, req.auth)
+
+  // Build body
   switch (req.body?.mode) {
-    case 'raw':
-      body = req.body.data || ''
-      setContentType(headers, req.body.contentType)
+    case BodyMode.Raw: {
+      body = req.body.rawContent || ''
+      const rawType = req.body.rawType
+      if (!headers.has('content-type')) {
+        if (rawType === 'xml') headers.set('content-type', 'application/xml')
+        else if (rawType === 'text') headers.set('content-type', 'text/plain')
+        else if (rawType === 'html') headers.set('content-type', 'text/html')
+        else headers.set('content-type', 'application/json')
+      }
       break
-    case 'urlencoded': {
+    }
+    case BodyMode.UrlEncoded: {
       const urlSearchParams = new URLSearchParams()
-      for (const pair of req.body.urlencoded || []) {
+      for (const pair of req.body.urlEncodedItems || []) {
         if (pair.enabled !== false && pair.key) {
           urlSearchParams.append(pair.key, pair.value || '')
         }
       }
       body = urlSearchParams.toString()
-      setContentType(headers, 'urlencoded')
+      if (!headers.has('content-type')) {
+        headers.set('content-type', 'application/x-www-form-urlencoded')
+      }
       break
     }
-    case 'form':
-      body = await keyValuePairsToFormData(req.body.form || [])
+    case BodyMode.FormData:
+      body = await keyValuePairsToFormData(req.body.formItems || [])
       break
-    case 'binary': {
-      const path = req.body?.filePath
-      if (path) {
+    case BodyMode.Binary: {
+      const filePath = req.body.binaryPath
+      if (filePath) {
+        if (!isSafePath(filePath)) {
+          console.error('[HTTP] Unsafe binary file path rejected:', filePath)
+          body = ''
+          break
+        }
         try {
-          const buf = await fs.readFile(path)
+          const buf = await fs.readFile(filePath)
           body = buf
           if (!headers.has('content-type')) {
             headers.set('content-type', 'application/octet-stream')
           }
         } catch (e) {
-          console.error('Failed to read file for request body:', e)
+          console.error('[HTTP] Failed to read binary file:', e)
           body = ''
         }
       }
@@ -144,16 +172,28 @@ const buildRequestOptions = async (
   return opts
 }
 
+/**
+ * Send an HTTP request using undici.
+ *
+ * @param req - The request configuration
+ * @param signal - Optional AbortSignal for cancellation
+ * @returns HTTPResponse with status, headers, body, timing, and size
+ */
 export async function sendHttpRequest(
-  req: HTTPRequest,
+  req: HTTPRequestConfig,
   signal?: AbortSignal
 ): Promise<HTTPResponse> {
   const start = Date.now()
-  const dispatcher = createAgent(req.proxy, req.tls)
+
+  // Build TLS config from request settings
+  const tlsConfig = req.settings?.ignoreSSL ? { rejectUnauthorized: false } : undefined
+
+  const dispatcher = createAgent(req.proxy, tlsConfig)
   const options = await buildRequestOptions(req)
+
   let { url } = req
   if (!/^https?:\/\//i.test(url)) {
-    url = `http://${url}`
+    url = `https://${url}`
   }
 
   try {
@@ -167,19 +207,39 @@ export async function sendHttpRequest(
     })
 
     const body = await res.body.text()
-    const headers = normalizeResponseHeaders(res.headers)
-    const size = getResponseSize(headers, body)
+    const responseHeaders = normalizeResponseHeaders(res.headers)
+    const size = getResponseSize(responseHeaders, body)
+
+    // Extract cookies from set-cookie headers
+    const cookies: HTTPResponse['cookies'] = []
+    const setCookieHeaders = res.headers['set-cookie']
+    if (setCookieHeaders) {
+      const cookieStrs = Array.isArray(setCookieHeaders) ? setCookieHeaders : [setCookieHeaders]
+      for (const cookieStr of cookieStrs) {
+        const parts = cookieStr.split(';').map((s) => s.trim())
+        const [nameValue] = parts[0]?.split('=') || []
+        if (nameValue) {
+          cookies.push({
+            domain: new URL(url).hostname,
+            name: parts[0].split('=')[0],
+            value: parts[0].split('=').slice(1).join('=') || '',
+            path: '/'
+          })
+        }
+      }
+    }
 
     return {
       status: res.statusCode,
       statusText: STATUS_CODES[res.statusCode] || '',
-      headers,
+      headers: responseHeaders,
       body,
       size,
-      duration: Date.now() - start
+      duration: Date.now() - start,
+      cookies
     }
   } catch (err) {
-    console.log('Request error:', err)
+    console.error('[HTTP] Request failed:', (err as Error).message)
     const reqErr = normalizeError(err)
     return {
       statusText: reqErr.message,

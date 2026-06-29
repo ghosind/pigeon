@@ -4,15 +4,12 @@ import SendIcon from '@mui/icons-material/Send'
 import CancelIcon from '@mui/icons-material/Cancel'
 import SaveIcon from '@mui/icons-material/Save'
 import SaveToCollectionModal from '@renderer/components/collection/SaveToCollectionModal'
-import { useRequestManager } from '@renderer/contexts/useRequestManager'
 import { useI18n } from '../../contexts/useI18n'
-import { KeyValuePair } from '@shared/types/kv'
-import { Request, HTTPMethod, HTTPRequest, CollectionNode } from '@shared/types'
-import { Url } from '@shared/utils/url'
+import { HTTPMethod, type RequestModel, type KeyValuePair } from '@shared/types'
 
 type AddressBarProps = {
-  request: Request
-  onChange: (request: Request) => void
+  request: RequestModel
+  onChange: (request: RequestModel) => void
   onSend: () => void
   isLoading: boolean
   onCancel: () => void
@@ -28,48 +25,34 @@ export default function AddressBar({
   const { t } = useI18n()
   const [isErr, setIsErr] = useState(false)
   const [saveOpen, setSaveOpen] = useState(false)
-  const { collections, addRequestToFolder } = useRequestManager()
 
-  const existsInCollections = (id: string): boolean => {
-    const find = (nodes: CollectionNode[]): boolean => {
-      for (const n of nodes) {
-        if (n.id === id) return true
-        if (n.type === 'folder' && n.children) {
-          if (find(n.children)) return true
-        }
-      }
-      return false
-    }
-
-    return find(collections)
+  const handleMethodChange = (method: HTTPMethod): void => {
+    onChange({ ...request, method })
   }
 
-  const handleChange = (value: Partial<HTTPRequest>): void => {
-    onChange({ ...request, request: { ...request.request, ...value } })
-  }
-
-  const handleURLChange = (value: string): void => {
+  const handleURLChange = (url: string): void => {
     const params: KeyValuePair[] = []
-    const urlObj = new Url(value)
-    urlObj.searchParams.forEach((v, k) => {
-      params.push({ key: k, value: v, enabled: true })
-    })
-
-    onChange({ ...request, request: { ...request.request, url: value, params } })
+    try {
+      const parsed = new URL(url, url.startsWith('http') ? undefined : 'http://localhost')
+      parsed.searchParams.forEach((v, k) => {
+        params.push({ key: k, value: v, enabled: true })
+      })
+    } catch {
+      // preserve existing params on parse failure
+      onChange({ ...request, url })
+      return
+    }
+    onChange({ ...request, url, params })
   }
 
   const handleSend = useCallback((): void => {
-    try {
-      if (!request.request?.url) throw new Error('Invalid URL')
-
-      new Url(request.request.url || '')
-      setIsErr(false)
-      onSend()
-    } catch (e) {
-      console.error(e)
+    if (!request.url.trim()) {
       setIsErr(true)
+      return
     }
-  }, [request.request.url, onSend])
+    setIsErr(false)
+    onSend()
+  }, [request.url, onSend])
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent): void => {
@@ -92,8 +75,8 @@ export default function AddressBar({
     <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
       <FormControl size="small" sx={{ minWidth: 110 }}>
         <Select
-          value={request.request.method}
-          onChange={(e) => handleChange({ method: e.target.value as HTTPMethod })}
+          value={request.method}
+          onChange={(e) => handleMethodChange(e.target.value as HTTPMethod)}
           disabled={isLoading}
         >
           {Object.values(HTTPMethod).map((m) => (
@@ -107,7 +90,7 @@ export default function AddressBar({
       <TextField
         size="small"
         fullWidth
-        value={request.request.url}
+        value={request.url}
         error={isErr}
         onChange={(e) => handleURLChange(e.target.value)}
         onKeyDown={(e) => {
@@ -144,22 +127,7 @@ export default function AddressBar({
           {t('action.send')}
         </Button>
       )}
-      <Button
-        variant="outlined"
-        startIcon={<SaveIcon />}
-        onClick={() => {
-          if (
-            request.isInCollection ||
-            (request.isInCollection === undefined && existsInCollections(request.id))
-          ) {
-            addRequestToFolder(null, request)
-            onChange({ ...request, isInCollection: true })
-            return
-          }
-
-          setSaveOpen(true)
-        }}
-      >
+      <Button variant="outlined" startIcon={<SaveIcon />} onClick={() => setSaveOpen(true)}>
         {t('action.save')}
       </Button>
 

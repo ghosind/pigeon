@@ -15,27 +15,25 @@ import CloseIcon from '@mui/icons-material/Close'
 import AddIcon from '@mui/icons-material/Add'
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown'
 import { useI18n } from '@renderer/contexts/useI18n'
-import { Request } from '@shared/types'
+import type { RequestModel } from '@shared/types'
 import { getMethodColors } from '@renderer/shared/constants/methodColors'
 
 type TabBarProps = {
-  requests: Request[]
+  tabs: RequestModel[]
   activeId: string | null
   onSelect: (id: string) => void
   onClose: (id: string) => void
   onAdd: () => void
   onRename?: (id: string, title: string) => void
-  onReorder?: (fromId: string, toId: string) => void
 }
 
 export default function TabBar({
-  requests,
+  tabs,
   activeId,
   onSelect,
   onClose,
   onAdd,
-  onRename,
-  onReorder
+  onRename
 }: TabBarProps): React.JSX.Element {
   const { t } = useI18n()
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -70,13 +68,9 @@ export default function TabBar({
     setMenuAnchor(null)
   }
 
-  const getRequestTitle = (req: Request): string => {
-    if (req.isTitled && req.title) {
-      return req.title
-    }
-    if (req.request.url) {
-      return req.request.url
-    }
+  const getRequestTitle = (req: RequestModel): string => {
+    if (req.name) return req.name
+    if (req.url) return req.url
     return t('request.name.untitled')
   }
 
@@ -89,8 +83,8 @@ export default function TabBar({
         scrollButtons="auto"
         sx={{ minHeight: 40 }}
       >
-        {requests.map((req) => {
-          const method = (req.request.method || '').toString().toUpperCase()
+        {tabs.map((req) => {
+          const method = (req.method || '').toString().toUpperCase()
           const color = methodColors[method] || theme.palette.text.primary
 
           const requestTitle = getRequestTitle(req)
@@ -120,14 +114,10 @@ export default function TabBar({
                   }}
                   onDrop={(e) => {
                     e.preventDefault()
-                    const fromId = e.dataTransfer?.getData('text/plain')
-                    if (fromId && fromId !== req.id) {
-                      onReorder?.(fromId, req.id)
-                    }
                   }}
                 >
                   <Chip
-                    label={req.request.method}
+                    label={req.method}
                     size="small"
                     sx={{
                       minWidth: 44,
@@ -161,9 +151,9 @@ export default function TabBar({
                     <Box
                       sx={{ fontSize: 13, display: 'flex', alignItems: 'center', gap: 1 }}
                       onDoubleClick={() => {
-                        const r = requests.find((x) => x.id === req.id)
-                        if (r?.isTitled && r.title) {
-                          startEdit(req.id, r.title)
+                        const r = tabs.find((x) => x.id === req.id)
+                        if (r?.name) {
+                          startEdit(req.id, r.name)
                         } else {
                           startEdit(req.id, '')
                         }
@@ -220,7 +210,7 @@ export default function TabBar({
         onClose={closeMenu}
         keepMounted
       >
-        {requests.map((req) => (
+        {tabs.map((req) => (
           <MenuItem
             key={req.id}
             selected={req.id === activeId}

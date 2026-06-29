@@ -15,18 +15,20 @@ import FolderOpenIcon from '@mui/icons-material/FolderOpen'
 import FolderIcon from '@mui/icons-material/Folder'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
-import { CollectionFolder, CollectionNode, Request } from '@shared/types'
-import CollectionTreeNode from './CollectionTreeNode'
+import { type Collection, type CollectionFolder, type RequestModel } from '@shared/types'
 import CollectionClickMenu from './CollectionClickMenu'
+import CollectionRequestNode from './CollectionRequestNode'
+
+type TreeNode = Collection | CollectionFolder
 
 type CollectionFolderNodeProps = {
-  node: CollectionFolder
+  node: TreeNode
   level: number
-  onOpenRequest: (req: Request) => void
+  onOpenRequest: (req: RequestModel) => void
   onRemove: (id: string) => void
   onAddRequest: (parentId: string | null) => void
-  onEdit: (node: CollectionNode) => void
-  onAddFolder: (parentId: string | null) => void
+  onEdit: (node: TreeNode) => void
+  onAddFolder: (parentId?: string | null) => void
   onExport: (id: string) => void
 }
 
@@ -78,7 +80,7 @@ export default function CollectionFolderNode({
           {expanded ? <FolderOpenIcon fontSize="small" /> : <FolderIcon fontSize="small" />}
         </ListItemIcon>
 
-        <ListItemText primary={node.title} />
+        <ListItemText primary={node.name} />
 
         <Box sx={{ ml: 'auto', display: 'flex', gap: 0.5 }}>
           <IconButton
@@ -116,20 +118,33 @@ export default function CollectionFolderNode({
 
       <Collapse in={expanded} timeout="auto" unmountOnExit>
         <List disablePadding>
-          {node.children &&
-            node.children.map((c) => (
-              <CollectionTreeNode
-                key={c.id}
-                node={c}
-                level={level + 1}
-                onOpenRequest={onOpenRequest}
-                onRemove={onRemove}
-                onAddRequest={onAddRequest}
-                onEdit={onEdit}
-                onAddFolder={onAddFolder}
-                onExport={onExport}
-              />
-            ))}
+          {('folders' in node ? (node as Collection).folders : [])?.map((f) => (
+            <CollectionFolderNode
+              key={f.id}
+              node={f}
+              level={level + 1}
+              onOpenRequest={onOpenRequest}
+              onRemove={onRemove}
+              onAddRequest={onAddRequest}
+              onEdit={onEdit}
+              onAddFolder={onAddFolder}
+              onExport={onExport}
+            />
+          ))}
+          {('requests' in node ? (node as Collection).requests : [])?.map(
+            (r) =>
+              r && (
+                <CollectionRequestNode
+                  key={r.id}
+                  node={r}
+                  level={level + 1}
+                  onOpenRequest={onOpenRequest}
+                  onRemove={onRemove}
+                  onEdit={onEdit}
+                  onExport={onExport}
+                />
+              )
+          )}
         </List>
       </Collapse>
 

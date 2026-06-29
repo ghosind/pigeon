@@ -15,7 +15,7 @@ import {
   Button
 } from '@mui/material'
 import DeleteIcon from '@mui/icons-material/Delete'
-import { KeyValuePair, KeyValueType } from '@shared/types/kv'
+import { KeyValuePair, ItemType } from '@shared/types'
 import { useI18n } from '../../contexts/useI18n'
 
 type KeyValueEditorProps = {
@@ -84,22 +84,22 @@ export default function KeyValueEditor({
     if (isPlaceholder) {
       const newRow: KeyValuePair = {
         key: patch.key ?? '',
-        type: patch.type ?? KeyValueType.Text,
         value: patch.value ?? '',
         enabled: patch.enabled ?? true
       }
 
-      if (
-        newRow.key === '' &&
-        newRow.type === '' &&
-        newRow.value === '' &&
-        patch.enabled === undefined
-      ) {
+      if (newRow.key === '' && newRow.value === '' && patch.enabled === undefined) {
         return
       }
 
-      onChange([...rows, newRow])
+      onChange([...rows, { ...newRow, type: patch.type ?? ItemType.Text }])
     } else {
+      const merged = { ...rows[idx], ...patch }
+      // Remove row if it became empty
+      if (merged.key === '' && merged.value === '') {
+        onChange(rows.filter((_, i) => i !== idx))
+        return
+      }
       onChange(rows.map((r, index) => (index === idx ? { ...r, ...patch } : r)))
     }
   }
@@ -133,7 +133,7 @@ export default function KeyValueEditor({
           </TableRow>
         </TableHead>
         <TableBody>
-          {[...rows, { key: '', value: '', type: KeyValueType.Text, enabled: undefined }].map(
+          {[...rows, { key: '', value: '', type: ItemType.Text, enabled: undefined }].map(
             (row, index) => {
               const isPlaceholder = index === rows.length
               return (
@@ -171,13 +171,11 @@ export default function KeyValueEditor({
                         <Select
                           size="small"
                           variant="standard"
-                          value={row.type ?? KeyValueType.Text}
-                          onChange={(e) =>
-                            updateRow(index, { type: e.target.value as KeyValueType })
-                          }
+                          value={row.type ?? ItemType.Text}
+                          onChange={(e) => updateRow(index, { type: e.target.value as ItemType })}
                         >
-                          <MenuItem value={KeyValueType.Text}>{t('kv.type.text')}</MenuItem>
-                          <MenuItem value={KeyValueType.File}>{t('kv.type.file')}</MenuItem>
+                          <MenuItem value={ItemType.Text}>{t('kv.type.text')}</MenuItem>
+                          <MenuItem value={ItemType.File}>{t('kv.type.file')}</MenuItem>
                         </Select>
                       </FormControl>
                     </TableCell>

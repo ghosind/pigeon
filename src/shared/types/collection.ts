@@ -1,20 +1,31 @@
-import { Request } from './request'
+// =========================================================================
+// Collection tree — Collection, CollectionFolder entities
+// =========================================================================
 
-export type CollectionRequest = {
+import type { RequestModel } from './request'
+
+export interface CollectionFolder {
   id: string
-  type: 'request'
-  request: Request
+  collectionId: string
+  parentId: string | null
+  name: string
+  sort: number
+  deleted: boolean
+  createTime: string
+  updateTime: string
+  children?: CollectionFolder[]
+  requests?: RequestModel[]
 }
 
-export type CollectionFolder = {
+export interface Collection {
   id: string
-  type: 'folder'
-  title: string
-  children: CollectionNode[]
-}
-
-export type CollectionNode = CollectionFolder | CollectionRequest
-
-export interface Collections {
-  nodes: CollectionNode[]
+  name: string
+  description?: string
+  starred: boolean
+  sort: number
+  deleted: boolean
+  createTime: string
+  updateTime: string
+  folders?: CollectionFolder[]
+  requests?: RequestModel[]
 }

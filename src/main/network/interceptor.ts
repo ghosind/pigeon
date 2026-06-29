@@ -1,8 +1,11 @@
-import { HTTPRequest, HTTPResponse } from '@shared/types'
+import { HTTPRequestConfig, HTTPResponse } from '@shared/types'
 
-export type RequestInterceptor = (req: HTTPRequest) => Promise<HTTPRequest> | HTTPRequest
+export type RequestInterceptor = (
+  req: HTTPRequestConfig
+) => Promise<HTTPRequestConfig> | HTTPRequestConfig
 
 export type ResponseInterceptor = (res: HTTPResponse) => Promise<HTTPResponse> | HTTPResponse
+
 export class InterceptorManager {
   private reqs: RequestInterceptor[] = []
   private ress: ResponseInterceptor[] = []
@@ -15,7 +18,7 @@ export class InterceptorManager {
     this.ress.push(fn)
   }
 
-  async runRequest(req: HTTPRequest): Promise<HTTPRequest> {
+  async runRequest(req: HTTPRequestConfig): Promise<HTTPRequestConfig> {
     let r = req
     for (const fn of this.reqs) {
       r = await fn(r)

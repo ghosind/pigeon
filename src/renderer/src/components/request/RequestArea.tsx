@@ -4,49 +4,50 @@ import { useI18n } from '../../contexts/useI18n'
 import KeyValueEditor from './KeyValueEditor'
 import AuthorizationEditor from './AuthorizationEditor'
 import BodyEditor from './BodyEditor'
-import { Request, HTTPRequest } from '@shared/types'
 import { Url } from '@shared/utils/url'
+import { RequestModel, KeyValuePair, HTTPBody, HTTPAuthorization } from '@shared/types'
 
 type RequestAreaProps = {
-  request: Request
-  onChange: (request: Request) => void
+  request: RequestModel
+  onChange: (request: RequestModel) => void
 }
 
 export default function RequestArea({ request, onChange }: RequestAreaProps): React.ReactElement {
   const [tab, setTab] = React.useState(0)
   const { t } = useI18n()
 
-  const onRequestChange = (req: Partial<HTTPRequest>): void => {
-    onChange({ ...request, request: { ...request.request, ...req } })
+  const onParamsChange = (params: KeyValuePair[]): void => {
+    // Auto-sync params to URL
+    if (!request.url) {
+      onChange({ ...request, params })
+      return
+    }
+
+    try {
+      const urlObj = new Url(request.url)
+      urlObj.search = ''
+      params.forEach((row) => {
+        if (row.key && row.enabled !== false) {
+          urlObj.searchParams.append(row.key, row.value || '')
+        }
+      })
+      onChange({ ...request, params, url: urlObj.toString() })
+    } catch {
+      // URL parse failed, just update params
+      onChange({ ...request, params })
+    }
   }
 
-  const onParamsChange = (params: HTTPRequest['params']): void => {
-    const { url } = request?.request || {}
-    const urlObj = new Url(url || '')
-    const search = new URLSearchParams()
-    params?.forEach((row) => {
-      if (row.key && row.enabled === true) {
-        search.append(row.key, row.value || '')
-      }
-    })
-    urlObj.search = search.toString()
-
-    onChange({
-      ...request,
-      request: {
-        ...request.request,
-        url: urlObj.toString(),
-        params
-      }
-    })
+  const onHeadersChange = (headers: KeyValuePair[]): void => {
+    onChange({ ...request, headers })
   }
 
-  const onHeadersChange = (headers: HTTPRequest['headers']): void => {
-    onChange({ ...request, request: { ...request.request, headers } })
+  const onAuthChange = (auth: HTTPAuthorization): void => {
+    onChange({ ...request, auth })
   }
 
-  const onBodyChange = (body: HTTPRequest['body']): void => {
-    onChange({ ...request, request: { ...request.request, body } })
+  const onBodyChange = (body: HTTPBody): void => {
+    onChange({ ...request, body })
   }
 
   return (
@@ -72,14 +73,10 @@ export default function RequestArea({ request, onChange }: RequestAreaProps): Re
       </Tabs>
 
       <Box sx={{ flex: 1, overflow: 'auto', p: 1, minHeight: 0 }}>
-        {tab === 0 && (
-          <KeyValueEditor rows={request?.request.params || []} onChange={onParamsChange} />
-        )}
-        {tab === 1 && (
-          <KeyValueEditor rows={request?.request.headers || []} onChange={onHeadersChange} />
-        )}
-        {tab === 2 && <AuthorizationEditor request={request?.request} onChange={onRequestChange} />}
-        {tab === 3 && <BodyEditor body={request?.request.body} onChange={onBodyChange} />}
+        {tab === 0 && <KeyValueEditor rows={request.params || []} onChange={onParamsChange} />}
+        {tab === 1 && <KeyValueEditor rows={request.headers || []} onChange={onHeadersChange} />}
+        {tab === 2 && <AuthorizationEditor request={request} onChange={onAuthChange} />}
+        {tab === 3 && <BodyEditor body={request.body} onChange={onBodyChange} />}
       </Box>
     </Box>
   )

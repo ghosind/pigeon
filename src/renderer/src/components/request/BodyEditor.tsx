@@ -5,85 +5,80 @@ import ModeSelect from './ModeSelect'
 import RawEditor from '@renderer/components/common/RawEditor'
 import RawControls from './RawControls'
 import KeyValueEditor from './KeyValueEditor'
-import { KeyValuePair } from '@shared/types/kv'
-import { HTTPBody, HTTPBodyMode, HTTPContentType } from '@shared/types'
+import { BodyMode, RawType, type HTTPBody, type KeyValuePair } from '@shared/types'
 
 type BodyEditorProps = {
   body?: HTTPBody
   onChange: (b: HTTPBody) => void
 }
 
-const ContentTypeMap: Record<HTTPBodyMode, HTTPContentType | ''> = {
-  raw: 'json',
-  form: 'form',
-  urlencoded: 'urlencoded',
-  none: 'text',
-  binary: ''
-}
-
 export default function BodyEditor({ body, onChange }: BodyEditorProps): React.ReactElement {
   const { t } = useI18n()
-  const [mode, setMode] = React.useState<HTTPBodyMode>(body?.mode || 'raw')
-  const [language, setLanguage] = React.useState<HTTPContentType>('json')
-  const [formRows, setFormRows] = React.useState<KeyValuePair[]>(body?.form ?? [])
-  const [urlRows, setUrlRows] = React.useState<KeyValuePair[]>(body?.urlencoded ?? [])
+  const [mode, setMode] = React.useState<BodyMode>(body?.mode || BodyMode.None)
+  const [language, setLanguage] = React.useState<RawType>(body?.rawType || RawType.JSON)
+  const [rawContent, setRawContent] = React.useState<string>(body?.rawContent || '')
+  const [formRows, setFormRows] = React.useState<KeyValuePair[]>(body?.formItems || [])
+  const [urlRows, setUrlRows] = React.useState<KeyValuePair[]>(body?.urlEncodedItems || [])
 
-  const updateRaw = (s: string): void => {
-    const prev = body ?? ({ mode: 'raw' } as HTTPBody)
-    onChange({ ...prev, mode: 'raw', data: s })
+  const updateRaw = (content: string): void => {
+    setRawContent(content)
+    onChange({ mode: BodyMode.Raw, rawType: language, rawContent: content })
   }
 
   const updateForm = (rows: KeyValuePair[]): void => {
     setFormRows(rows)
-    const prev = body ?? ({ mode: 'form' } as HTTPBody)
-    onChange({ ...prev, mode: 'form', form: rows })
+    onChange({ mode: BodyMode.FormData, formItems: rows })
   }
 
   const updateUrl = (rows: KeyValuePair[]): void => {
     setUrlRows(rows)
-    const prev = body ?? ({ mode: 'urlencoded' } as HTTPBody)
-    onChange({ ...prev, mode: 'urlencoded', urlencoded: rows })
+    onChange({ mode: BodyMode.UrlEncoded, urlEncodedItems: rows })
   }
 
-  const handleModeChange = (m: HTTPBodyMode): void => {
-    const prev = body ?? ({ mode: m } as HTTPBody)
-    let contentType: HTTPContentType | '' = ContentTypeMap[m]
-    if (m === 'raw') {
-      contentType = language
-    }
-
-    const next: HTTPBody = { ...prev, mode: m, contentType: contentType || undefined }
+  const handleModeChange = (m: BodyMode): void => {
     setMode(m)
-    onChange(next)
+    switch (m) {
+      case BodyMode.None:
+        onChange({ mode: BodyMode.None })
+        break
+      case BodyMode.Raw:
+        onChange({ mode: BodyMode.Raw, rawType: language, rawContent })
+        break
+      case BodyMode.FormData:
+        onChange({ mode: BodyMode.FormData, formItems: formRows })
+        break
+      case BodyMode.UrlEncoded:
+        onChange({ mode: BodyMode.UrlEncoded, urlEncodedItems: urlRows })
+        break
+      case BodyMode.Binary:
+        onChange({ mode: BodyMode.Binary, binaryPath: body?.binaryPath || '' })
+        break
+    }
   }
 
-  const handleLanguageChange = (lang: HTTPContentType): void => {
+  const handleLanguageChange = (lang: RawType): void => {
     setLanguage(lang)
-    const prev = body ?? ({ mode: 'raw' } as HTTPBody)
-    onChange({ ...prev, mode: 'raw', contentType: lang })
+    onChange({ mode: BodyMode.Raw, rawType: lang, rawContent })
   }
 
   const handleFileSelect = async (): Promise<void> => {
     try {
       const path: string | null = await window.api.openFileDialog()
-      if (!path) {
-        return
-      }
-      const prev = body ?? ({ mode: 'binary' } as HTTPBody)
-      onChange({ ...prev, mode: 'binary', filePath: path })
+      if (!path) return
+      onChange({ mode: BodyMode.Binary, binaryPath: path })
     } catch (e) {
-      console.error('open file dialog failed', e)
+      console.error('[BodyEditor] Open file dialog failed:', e)
     }
   }
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <Box sx={{ borderBottom: 1, borderColor: 'divider', display: 'flex', alignItems: 'center' }}>
-        <ModeSelect mode={mode} onChange={(m: string) => handleModeChange(m as HTTPBodyMode)} />
+        <ModeSelect mode={mode} onChange={(m: string) => handleModeChange(m as BodyMode)} />
         <Box sx={{ ml: 'auto', display: 'flex', alignItems: 'center', gap: 1, mr: 1 }}>
-          {mode === 'raw' && (
+          {mode === BodyMode.Raw && (
             <RawControls
-              body={typeof body === 'string' ? (body as string) : (body as HTTPBody)?.data || ''}
+              body={rawContent}
               onChange={updateRaw}
               language={language}
               setLanguage={handleLanguageChange}
@@ -93,26 +88,22 @@ export default function BodyEditor({ body, onChange }: BodyEditorProps): React.R
       </Box>
 
       <Box sx={{ flex: 1, p: 1, minHeight: 0 }}>
-        {mode === 'raw' && (
-          <RawEditor
-            body={typeof body === 'string' ? (body as string) : (body as HTTPBody)?.data || ''}
-            onChange={updateRaw}
-            language={language}
-          />
+        {mode === BodyMode.Raw && (
+          <RawEditor body={rawContent} onChange={updateRaw} language={language} />
         )}
 
-        {mode === 'binary' && (
+        {mode === BodyMode.Binary && (
           <Box sx={{ p: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
             <Button size="small" onClick={handleFileSelect}>
               {t('request.binary.select')}
             </Button>
             <Typography variant="body2" sx={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
-              {body?.filePath || ''}
+              {body?.binaryPath || ''}
             </Typography>
           </Box>
         )}
 
-        {mode === 'none' && (
+        {mode === BodyMode.None && (
           <Box sx={{ p: 2 }}>
             <Typography variant="body2" color="text.secondary">
               {t('request.body.noneNotice')}
@@ -120,13 +111,13 @@ export default function BodyEditor({ body, onChange }: BodyEditorProps): React.R
           </Box>
         )}
 
-        {mode === 'form' && (
+        {mode === BodyMode.FormData && (
           <Box sx={{ height: '100%' }}>
             <KeyValueEditor rows={formRows} onChange={updateForm} allowFile />
           </Box>
         )}
 
-        {mode === 'urlencoded' && (
+        {mode === BodyMode.UrlEncoded && (
           <Box sx={{ height: '100%' }}>
             <KeyValueEditor rows={urlRows} onChange={updateUrl} />
           </Box>

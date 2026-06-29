@@ -1,9 +1,8 @@
 import { IpcMain, dialog } from 'electron'
-import { IPC_OPEN_FILE } from '@shared/constants/channels'
+import { IPC_DIALOG_OPEN_FILE } from '@shared/constants/channels'
 
 export function registerDialogHandlers(ipc: IpcMain): void {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  ipc.handle(IPC_OPEN_FILE, async (_event) => {
+  ipc.handle(IPC_DIALOG_OPEN_FILE, async (): Promise<string | null> => {
     try {
       const res = await dialog.showOpenDialog({
         properties: ['openFile'],
@@ -14,7 +13,7 @@ export function registerDialogHandlers(ipc: IpcMain): void {
       }
       return res.filePaths[0]
     } catch (e) {
-      console.error('Failed to open file dialog:', e)
+      console.error('[IPC] dialog:open-file — failed:', e)
       return null
     }
   })

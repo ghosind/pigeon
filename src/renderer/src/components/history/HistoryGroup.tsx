@@ -11,13 +11,13 @@ import {
 } from '@mui/material'
 import ExpandLessIcon from '@mui/icons-material/ExpandLess'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
-import { Request, RequestHistory } from '@shared/types'
+import type { RequestHistoryRecord, RequestModel, HTTPMethod } from '@shared/types'
 import { getMethodColors } from '@renderer/shared/constants/methodColors'
 
 type HistoryGroupProps = {
   title: string
-  histories: RequestHistory[]
-  openRequest: (req: Request) => void
+  histories: RequestHistoryRecord[]
+  openRequest: (req: RequestModel) => void
 }
 
 export default function HistoryGroup({
@@ -53,18 +53,23 @@ export default function HistoryGroup({
       </Box>
       <Collapse in={expanded} timeout="auto" unmountOnExit>
         {histories.map((h) => {
-          const method = (h.request.method || '').toString().toUpperCase()
+          const method = (h.method || '').toString().toUpperCase()
           const color = methodColors[method] || theme.palette.text.primary
 
           return (
             <ListItemButton
               key={h.id}
               onClick={() => {
-                const req: Request = {
+                const req: RequestModel = {
                   id: h.id,
-                  type: h.type,
-                  request: h.request,
-                  response: h.response
+                  name: h.url,
+                  method: (h.method as HTTPMethod) || 'GET',
+                  url: h.url,
+                  starred: false,
+                  sort: 0,
+                  deleted: false,
+                  createTime: h.createTime,
+                  updateTime: h.createTime
                 }
                 openRequest(req)
               }}
@@ -85,10 +90,10 @@ export default function HistoryGroup({
                 />
                 <Box sx={{ flex: 1, minWidth: 0 }}>
                   <Typography noWrap variant="body2">
-                    {h.request.url}
+                    {h.url}
                   </Typography>
                   <Typography noWrap variant="caption" color="text.secondary">
-                    {new Date(h.timestamp).toLocaleTimeString()}
+                    {new Date(h.createTime).toLocaleTimeString()}
                   </Typography>
                 </Box>
               </Box>
