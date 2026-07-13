@@ -13,6 +13,7 @@ import ExpandLessIcon from '@mui/icons-material/ExpandLess'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import type { RequestHistoryRecord, RequestModel, HTTPMethod } from '@shared/types'
 import { getMethodColors } from '@renderer/shared/constants/methodColors'
+import { useI18n } from '@renderer/contexts/useI18n'
 
 type HistoryGroupProps = {
   title: string
@@ -26,6 +27,7 @@ export default function HistoryGroup({
   openRequest
 }: HistoryGroupProps): React.JSX.Element {
   const theme = useTheme()
+  const { t } = useI18n()
   const [expanded, setExpanded] = useState<boolean>(true)
 
   const toggle = (): void => setExpanded((s) => !s)
@@ -47,7 +49,11 @@ export default function HistoryGroup({
         }}
       >
         <Box>{title}</Box>
-        <IconButton size="small" onClick={toggle} aria-label={expanded ? 'collapse' : 'expand'}>
+        <IconButton
+          size="small"
+          onClick={toggle}
+          aria-label={expanded ? t('common.collapse') : t('common.expand')}
+        >
           {expanded ? <ExpandLessIcon fontSize="small" /> : <ExpandMoreIcon fontSize="small" />}
         </IconButton>
       </Box>

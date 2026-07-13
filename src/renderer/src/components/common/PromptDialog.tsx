@@ -5,6 +5,7 @@ import DialogContent from '@mui/material/DialogContent'
 import DialogActions from '@mui/material/DialogActions'
 import TextField from '@mui/material/TextField'
 import Button from '@mui/material/Button'
+import { useI18n } from '@renderer/contexts/useI18n'
 
 type PromptDialogProps = {
   open: boolean
@@ -15,11 +16,14 @@ type PromptDialogProps = {
 
 export default function PromptDialog({
   open,
-  title = 'Input',
+  title,
   defaultValue = '',
   onClose
 }: PromptDialogProps): React.JSX.Element {
+  const { t } = useI18n()
   const inputRef = useRef<HTMLInputElement | null>(null)
+
+  const displayTitle = title ?? t('dialog.input')
 
   useEffect(() => {
     const handler = (e: KeyboardEvent): void => {
@@ -33,7 +37,7 @@ export default function PromptDialog({
 
   return (
     <Dialog open={open} onClose={() => onClose(null)}>
-      <DialogTitle>{title}</DialogTitle>
+      <DialogTitle>{displayTitle}</DialogTitle>
       <DialogContent>
         <TextField
           autoFocus
@@ -46,13 +50,13 @@ export default function PromptDialog({
         />
       </DialogContent>
       <DialogActions>
-        <Button onClick={() => onClose(null)}>Cancel</Button>
+        <Button onClick={() => onClose(null)}>{t('action.cancel')}</Button>
         <Button
           onClick={() => onClose(inputRef.current?.value.trim() || null)}
           variant="contained"
           color="primary"
         >
-          OK
+          {t('action.ok')}
         </Button>
       </DialogActions>
     </Dialog>

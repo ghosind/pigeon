@@ -19,6 +19,7 @@ export interface CollectionFolder {
 
 export interface Collection {
   id: string
+  workspaceId?: string
   name: string
   description?: string
   starred: boolean

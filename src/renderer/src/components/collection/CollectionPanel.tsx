@@ -69,15 +69,12 @@ export default function CollectionPanel(): React.JSX.Element {
 
   useEffect(() => {
     const q = searchKeyword
-    const seq = ++searchSeq.current
+    ++searchSeq.current
     if (!q) return
 
     const timer = window.setTimeout(async () => {
       try {
         await searchCollections(q)
-        if (seq === searchSeq.current) {
-          // searchCollections updates state internally
-        }
       } catch (err) {
         console.error('[CollectionPanel] Search failed:', err)
       }

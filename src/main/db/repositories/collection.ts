@@ -32,6 +32,7 @@ import type {
 function rowToCollection(row: Record<string, unknown>): Collection {
   return {
     id: row.id as string,
+    workspaceId: (row.workspace_id as string) || undefined,
     name: row.name as string,
     description: (row.description as string) || '',
     starred: Boolean(row.starred),
@@ -42,7 +43,13 @@ function rowToCollection(row: Record<string, unknown>): Collection {
   }
 }
 
-export function listCollections(): Collection[] {
+export function listCollections(workspaceId?: string): Collection[] {
+  if (workspaceId) {
+    return all<Record<string, unknown>>(
+      `SELECT * FROM collection WHERE deleted = 0 AND workspace_id = ? ORDER BY starred DESC, sort ASC, name ASC`,
+      [workspaceId]
+    ).map(rowToCollection)
+  }
   return all<Record<string, unknown>>(
     `SELECT * FROM collection WHERE deleted = 0 ORDER BY starred DESC, sort ASC, name ASC`
   ).map(rowToCollection)
@@ -55,7 +62,7 @@ export function getCollection(id: string): Collection | undefined {
   return row ? rowToCollection(row) : undefined
 }
 
-export function createCollection(name: string, description = ''): Collection {
+export function createCollection(name: string, description = '', workspaceId?: string): Collection {
   const id = uuidv4()
   const now = new Date().toISOString()
   const maxSort = (
@@ -65,9 +72,9 @@ export function createCollection(name: string, description = ''): Collection {
   )?.maxSort
 
   run(
-    `INSERT INTO collection (id, name, description, sort, create_time, update_time)
-     VALUES (?, ?, ?, ?, ?, ?)`,
-    [id, name, description, (maxSort ?? 0) + 1, now, now]
+    `INSERT INTO collection (id, workspace_id, name, description, sort, create_time, update_time)
+     VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    [id, workspaceId || null, name, description, (maxSort ?? 0) + 1, now, now]
   )
 
   return {

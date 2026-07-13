@@ -47,10 +47,10 @@ export default function ResponseHeader({
         {panel === 'body' && (
           <FormControl size="small" sx={{ ml: 2, minWidth: 100 }} variant="standard">
             <Select value={language} onChange={(e) => setLanguage(e.target.value as string)}>
-              <MenuItem value="json">JSON</MenuItem>
-              <MenuItem value="xml">XML</MenuItem>
-              <MenuItem value="html">HTML</MenuItem>
-              <MenuItem value="text">Text</MenuItem>
+              <MenuItem value="json">{t('response.raw.json')}</MenuItem>
+              <MenuItem value="xml">{t('response.raw.xml')}</MenuItem>
+              <MenuItem value="html">{t('response.raw.html')}</MenuItem>
+              <MenuItem value="text">{t('response.raw.text')}</MenuItem>
             </Select>
           </FormControl>
         )}

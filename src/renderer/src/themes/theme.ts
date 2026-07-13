@@ -1,18 +1,18 @@
 import { createTheme } from '@mui/material/styles'
 
-const CONTROL_HEIGHT = 36
-
 export const pigeonTheme = createTheme({
   spacing: 4,
 
   shape: {
-    borderRadius: 6
+    borderRadius: 4
   },
 
   typography: {
     fontSize: 13,
-    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial'
+    fontFamily:
+      '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
   },
+
   components: {
     MuiTextField: {
       defaultProps: {
@@ -27,10 +27,11 @@ export const pigeonTheme = createTheme({
       },
       styleOverrides: {
         root: {
-          height: 40
+          height: 36
         },
         input: {
-          padding: '8px 10px'
+          padding: '6px 8px',
+          fontSize: '13px'
         }
       }
     },
@@ -48,11 +49,20 @@ export const pigeonTheme = createTheme({
       },
       styleOverrides: {
         root: {
-          height: 40,
-          minWidth: 72,
           textTransform: 'none',
-          paddingLeft: 12,
-          paddingRight: 12
+          fontWeight: 500,
+          borderRadius: 4
+        }
+      }
+    },
+
+    MuiTab: {
+      styleOverrides: {
+        root: {
+          textTransform: 'none',
+          minHeight: 36,
+          fontSize: '13px',
+          padding: '6px 12px'
         }
       }
     },
@@ -65,12 +75,39 @@ export const pigeonTheme = createTheme({
       }
     },
 
-    MuiTab: {
+    MuiTableCell: {
       styleOverrides: {
         root: {
-          minHeight: 36,
-          padding: '6px 12px',
-          textTransform: 'none'
+          padding: '4px 8px',
+          fontSize: '13px'
+        },
+        head: {
+          fontSize: '12px',
+          fontWeight: 500
+        }
+      }
+    },
+
+    MuiDialog: {
+      styleOverrides: {
+        paper: {
+          borderRadius: 4
+        }
+      }
+    },
+
+    MuiCard: {
+      styleOverrides: {
+        root: {
+          borderRadius: 4
+        }
+      }
+    },
+
+    MuiPaper: {
+      styleOverrides: {
+        root: {
+          backgroundImage: 'none'
         }
       }
     },
@@ -94,61 +131,8 @@ export const pigeonTheme = createTheme({
       }
     },
 
-    MuiDialogTitle: {
-      styleOverrides: {
-        root: {
-          padding: '12px 16px',
-          fontSize: 14
-        }
-      }
-    },
-
-    MuiDialogContent: {
-      styleOverrides: {
-        root: {
-          padding: 16
-        }
-      }
-    },
-
     MuiTable: {
       defaultProps: { size: 'small' }
-    },
-
-    MuiTableRow: {
-      styleOverrides: {
-        root: { height: CONTROL_HEIGHT }
-      }
-    },
-
-    MuiTableCell: {
-      styleOverrides: {
-        root: {
-          padding: '4px 8px',
-          height: CONTROL_HEIGHT,
-          verticalAlign: 'middle'
-        },
-        head: {
-          fontSize: 12,
-          fontWeight: 500,
-          color: 'text.secondary',
-          alignItems: 'center'
-        }
-      }
-    },
-
-    MuiInputBase: {
-      defaultProps: { size: 'small' },
-      styleOverrides: {
-        root: {
-          height: CONTROL_HEIGHT - 8,
-          fontSize: 13
-        },
-        input: {
-          padding: '4px 8px',
-          lineHeight: '20px'
-        }
-      }
     },
 
     MuiCheckbox: {
@@ -162,6 +146,18 @@ export const pigeonTheme = createTheme({
       defaultProps: { size: 'small' },
       styleOverrides: {
         root: { padding: 4 }
+      }
+    },
+
+    MuiInputBase: {
+      defaultProps: { size: 'small' },
+      styleOverrides: {
+        root: {
+          fontSize: '13px'
+        },
+        input: {
+          padding: '4px 8px'
+        }
       }
     }
   }

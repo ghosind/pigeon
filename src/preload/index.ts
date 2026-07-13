@@ -47,17 +47,20 @@ const api = {
     ipcRenderer.invoke(channels.IPC_CONFIG_SAVE, partial),
 
   // -- Collections ---------------------------------------------------------
-  listCollections: (): Promise<{ ok: boolean; data?: Collection[]; error?: string }> =>
-    ipcRenderer.invoke(channels.IPC_COLLECTION_LIST),
+  listCollections: (
+    workspaceId?: string
+  ): Promise<{ ok: boolean; data?: Collection[]; error?: string }> =>
+    ipcRenderer.invoke(channels.IPC_COLLECTION_LIST, workspaceId),
 
   getCollection: (id: string): Promise<{ ok: boolean; data?: Collection; error?: string }> =>
     ipcRenderer.invoke(channels.IPC_COLLECTION_GET, id),
 
   createCollection: (
     name: string,
-    description?: string
+    description?: string,
+    workspaceId?: string
   ): Promise<{ ok: boolean; data?: Collection; error?: string }> =>
-    ipcRenderer.invoke(channels.IPC_COLLECTION_CREATE, name, description),
+    ipcRenderer.invoke(channels.IPC_COLLECTION_CREATE, name, description, workspaceId),
 
   updateCollection: (
     id: string,
@@ -199,9 +202,10 @@ const api = {
   // -- History -------------------------------------------------------------
   listHistory: (
     limit?: number,
-    offset?: number
+    offset?: number,
+    workspaceId?: string
   ): Promise<{ ok: boolean; data?: RequestHistoryRecord[]; error?: string }> =>
-    ipcRenderer.invoke(channels.IPC_HISTORY_LIST, limit, offset),
+    ipcRenderer.invoke(channels.IPC_HISTORY_LIST, limit, offset, workspaceId),
 
   saveHistory: (
     record: Partial<RequestHistoryRecord>
@@ -256,6 +260,78 @@ const api = {
     limit?: number
   ): Promise<{ ok: boolean; data?: unknown; error?: string }> =>
     ipcRenderer.invoke(channels.IPC_SEARCH_GLOBAL, keyword, limit),
+
+  // -- Workspaces ----------------------------------------------------------
+  listWorkspaces: (): Promise<{
+    ok: boolean
+    data?: import('@shared/types').Workspace[]
+    error?: string
+  }> => ipcRenderer.invoke(channels.IPC_WORKSPACE_LIST),
+
+  getWorkspace: (
+    id: string
+  ): Promise<{ ok: boolean; data?: import('@shared/types').Workspace; error?: string }> =>
+    ipcRenderer.invoke(channels.IPC_WORKSPACE_GET, id),
+
+  createWorkspace: (
+    name: string,
+    description?: string
+  ): Promise<{ ok: boolean; data?: import('@shared/types').Workspace; error?: string }> =>
+    ipcRenderer.invoke(channels.IPC_WORKSPACE_CREATE, name, description),
+
+  updateWorkspace: (
+    id: string,
+    data: Partial<import('@shared/types').Workspace>
+  ): Promise<{ ok: boolean; error?: string }> =>
+    ipcRenderer.invoke(channels.IPC_WORKSPACE_UPDATE, id, data),
+
+  deleteWorkspace: (id: string): Promise<{ ok: boolean; error?: string }> =>
+    ipcRenderer.invoke(channels.IPC_WORKSPACE_DELETE, id),
+
+  // -- Proxy Config --------------------------------------------------------
+  listProxies: (): Promise<{
+    ok: boolean
+    data?: import('@shared/types').ProxyConfig[]
+    error?: string
+  }> => ipcRenderer.invoke(channels.IPC_PROXY_LIST),
+
+  createProxy: (
+    data: Partial<import('@shared/types').ProxyConfig>
+  ): Promise<{ ok: boolean; data?: import('@shared/types').ProxyConfig; error?: string }> =>
+    ipcRenderer.invoke(channels.IPC_PROXY_CREATE, data),
+
+  updateProxy: (
+    id: string,
+    data: Partial<import('@shared/types').ProxyConfig>
+  ): Promise<{ ok: boolean; error?: string }> =>
+    ipcRenderer.invoke(channels.IPC_PROXY_UPDATE, id, data),
+
+  deleteProxy: (id: string): Promise<{ ok: boolean; error?: string }> =>
+    ipcRenderer.invoke(channels.IPC_PROXY_DELETE, id),
+
+  // -- Global Variables ----------------------------------------------------
+  listGlobalVars: (): Promise<{
+    ok: boolean
+    data?: import('@shared/types').GlobalVariable[]
+    error?: string
+  }> => ipcRenderer.invoke(channels.IPC_GLOBAL_VAR_LIST),
+
+  saveGlobalVar: (
+    key: string,
+    value: string,
+    description?: string
+  ): Promise<{ ok: boolean; error?: string }> =>
+    ipcRenderer.invoke(channels.IPC_GLOBAL_VAR_SAVE, key, value, description),
+
+  deleteGlobalVar: (key: string): Promise<{ ok: boolean; error?: string }> =>
+    ipcRenderer.invoke(channels.IPC_GLOBAL_VAR_DELETE, key),
+
+  // -- Code Snippet --------------------------------------------------------
+  generateCodeSnippet: (
+    data: { method: string; url: string; headers?: Record<string, string>; body?: string },
+    language: string
+  ): Promise<{ ok: boolean; data?: string; error?: string }> =>
+    ipcRenderer.invoke(channels.IPC_CODE_SNIPPET_GENERATE, data, language),
 
   // -- Legacy compatibility (delegated to new channels) --------------------
   saveSettings: (settings: Record<string, string>): Promise<{ ok: boolean; error?: string }> =>

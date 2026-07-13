@@ -2,90 +2,59 @@ import React from 'react'
 import Box from '@mui/material/Box'
 import Tabs from '@mui/material/Tabs'
 import Tab from '@mui/material/Tab'
+import Typography from '@mui/material/Typography'
 import { useTheme } from '@mui/material/styles'
 import CollectionPanel from '@renderer/components/collection/CollectionPanel'
 import HistoryPanel from '@renderer/components/history/HistoryPanel'
 import CollectionsIcon from '@mui/icons-material/CollectionsBookmark'
 import HistoryIcon from '@mui/icons-material/History'
+import { useI18n } from '@renderer/contexts/useI18n'
+import { useWorkspaceStore } from '@renderer/stores'
 
-const TABS: {
-  id: string
-  aria: string
-  icon: React.ReactElement
-  content: React.ReactElement
-}[] = [
-  {
-    id: 'collections',
-    aria: 'collections',
-    icon: <CollectionsIcon />,
-    content: <CollectionPanel />
-  },
-  {
-    id: 'history',
-    aria: 'history',
-    icon: <HistoryIcon />,
-    content: <HistoryPanel />
-  }
-]
+type SidebarProps = {
+  workspaceId?: string
+}
 
-export default function Sidebar(): React.JSX.Element {
+export default function Sidebar({ workspaceId }: SidebarProps): React.JSX.Element {
   const [tab, setTab] = React.useState(0)
   const theme = useTheme()
+  const { t } = useI18n()
+  const workspaces = useWorkspaceStore((s) => s.workspaces)
+  const workspaceName = workspaceId ? workspaces.find((w) => w.id === workspaceId)?.name || '' : ''
+  const TABS = [
+    {
+      id: 'collections',
+      aria: t('sidebar.collections'),
+      icon: <CollectionsIcon />,
+      content: <CollectionPanel />
+    },
+    {
+      id: 'history',
+      aria: t('sidebar.history'),
+      icon: <HistoryIcon />,
+      content: <HistoryPanel workspaceId={workspaceId} />
+    }
+  ]
   const leftBg = theme.palette.background.paper
   const divider = theme.palette.divider
   const iconColor = theme.palette.text.secondary
   const selectedBg = theme.palette.action.selected
   const STORAGE_KEY = 'pigeon:sidebarCollapsed'
-  const [settingsLoaded, setSettingsLoaded] = React.useState(false)
   const [collapsed, setCollapsed] = React.useState<boolean>(() => {
     try {
-      const raw = localStorage.getItem(STORAGE_KEY)
-      return raw === '1'
+      return localStorage.getItem(STORAGE_KEY) === '1'
     } catch {
       return false
     }
   })
 
   React.useEffect(() => {
-    if (!settingsLoaded) {
-      return
-    }
-
     try {
       localStorage.setItem(STORAGE_KEY, collapsed ? '1' : '0')
-    } catch (e) {
-      console.error(e)
+    } catch {
+      // silently handled
     }
-
-    // persist to sqlite via preload API
-    try {
-      if (typeof window !== 'undefined' && window.api?.saveSettings) {
-        window.api.saveSettings({ sidebarCollapsed: collapsed ? '1' : '0' })
-      }
-    } catch (err) {
-      console.error('Failed to save sidebar collapsed to sqlite:', err)
-    }
-  }, [collapsed, settingsLoaded])
-
-  React.useEffect(() => {
-    async function load(): Promise<void> {
-      try {
-        if (typeof window !== 'undefined' && window.api?.loadSettings) {
-          const res = await window.api.loadSettings()
-          if (res?.ok && res.result && typeof res.result.sidebarCollapsed !== 'undefined') {
-            const loaded = res.result.sidebarCollapsed === '1'
-            setCollapsed((prev) => (prev === loaded ? prev : loaded))
-          }
-        }
-      } catch (err) {
-        console.error('Failed to load sidebar collapsed from sqlite:', err)
-      } finally {
-        setSettingsLoaded(true)
-      }
-    }
-
-    load()
-  }, [])
+  }, [collapsed])
 
   return (
     <Box
@@ -156,6 +125,21 @@ export default function Sidebar(): React.JSX.Element {
             minHeight: 0
           }}
         >
+          {/* Workspace title header */}
+          {workspaceName && (
+            <Box
+              sx={{
+                px: 1.5,
+                py: 1,
+                borderBottom: `1px solid ${divider}`,
+                background: theme.palette.background.default
+              }}
+            >
+              <Typography variant="subtitle2" fontWeight={600} noWrap>
+                {workspaceName}
+              </Typography>
+            </Box>
+          )}
           <Box sx={{ flex: 1, overflow: 'auto', background: theme.palette.background.default }}>
             {TABS[tab]?.content}
           </Box>

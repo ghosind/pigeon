@@ -1,12 +1,10 @@
 import React, { useEffect, useMemo, useState } from 'react'
-import { I18nContext } from './useI18n'
-
-export type Lang = 'en' | 'zh'
-
-const STORAGE_KEY = 'pigeon:lang'
+import { I18nContext, type I18nContextValue, type Lang } from './useI18n'
 
 import en from '../i18n/en.json'
 import zh from '../i18n/zh.json'
+
+const STORAGE_KEY = 'pigeon:lang'
 
 const translations: Record<Lang, Record<string, string>> = {
   en,
@@ -60,9 +58,23 @@ export const I18nProvider: React.FC<React.PropsWithChildren<Record<string, unkno
     load()
   }, [])
 
-  const t = useMemo(() => (key: string) => translations[lang][key] || key, [lang])
+  const t = useMemo(
+    () =>
+      (key: string, params?: Record<string, string | number>): string => {
+        let value: string = translations[lang][key] || key
+        if (params) {
+          for (const [k, v] of Object.entries(params)) {
+            value = value.replace(`{${k}}`, String(v))
+          }
+        }
+        return value
+      },
+    [lang]
+  )
 
-  return <I18nContext.Provider value={{ lang, t, setLang }}>{children}</I18nContext.Provider>
+  const value: I18nContextValue = { lang, t, setLang }
+
+  return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>
 }
 
 export default I18nProvider

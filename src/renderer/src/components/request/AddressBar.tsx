@@ -25,6 +25,7 @@ export default function AddressBar({
   const { t } = useI18n()
   const [isErr, setIsErr] = useState(false)
   const [saveOpen, setSaveOpen] = useState(false)
+  const [saveModalKey, setSaveModalKey] = useState(0)
 
   const handleMethodChange = (method: HTTPMethod): void => {
     onChange({ ...request, method })
@@ -112,8 +113,10 @@ export default function AddressBar({
         <Button
           variant="contained"
           color="warning"
+          size="small"
           endIcon={<CancelIcon />}
           onClick={() => onCancel()}
+          sx={{ whiteSpace: 'nowrap', minWidth: 90, flexShrink: 0, height: 36, py: 0 }}
         >
           {t('action.cancel')}
         </Button>
@@ -121,17 +124,29 @@ export default function AddressBar({
         <Button
           variant="contained"
           color="primary"
+          size="small"
           endIcon={<SendIcon />}
           onClick={() => handleSend()}
+          sx={{ whiteSpace: 'nowrap', minWidth: 80, flexShrink: 0, height: 36, py: 0 }}
         >
           {t('action.send')}
         </Button>
       )}
-      <Button variant="outlined" startIcon={<SaveIcon />} onClick={() => setSaveOpen(true)}>
+      <Button
+        variant="outlined"
+        size="small"
+        startIcon={<SaveIcon />}
+        onClick={() => {
+          setSaveOpen(true)
+          setSaveModalKey((k) => k + 1)
+        }}
+        sx={{ whiteSpace: 'nowrap', minWidth: 80, flexShrink: 0, height: 36, py: 0 }}
+      >
         {t('action.save')}
       </Button>
 
       <SaveToCollectionModal
+        key={saveModalKey}
         open={saveOpen}
         onClose={() => setSaveOpen(false)}
         request={request}

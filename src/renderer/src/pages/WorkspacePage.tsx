@@ -1,12 +1,14 @@
 /**
- * RequestPage — main request/response page with multi-tab support.
+ * WorkspacePage — main API debugging workspace with multi-tab support.
  *
- * Left-right split layout:
- * - Left: Request editor (method, URL, params, headers, auth, body)
- * - Right: Response viewer (status, body, headers, cookies, console, tests)
+ * Layout: LeftSidebar | [TabBar | AddressBar | RequestPanel | Splitter | ResponsePanel] | RightSidebar
+ *
+ * Merged from RequestPage — per-tab response state, sending tracking,
+ * cancel support, tab handler registration, and proper splitter.
  */
 
-import React, { useState, useCallback, useRef } from 'react'
+import React, { useState, useCallback, useRef, useEffect } from 'react'
+import { useParams } from 'react-router-dom'
 import { Box, Paper } from '@mui/material'
 import { v4 as uuidv4 } from 'uuid'
 import TabBar from '@renderer/components/common/TabBar'
@@ -14,14 +16,21 @@ import AddressBar from '@renderer/components/request/AddressBar'
 import RequestArea from '@renderer/components/request/RequestArea'
 import ResponseArea from '@renderer/components/response/ResponseArea'
 import Splitter from '@renderer/components/common/Splitter'
+import Sidebar from '@renderer/components/common/Sidebar'
+import ToolSideBar from '@renderer/components/common/ToolSideBar'
 import { HTTPMethod, type RequestModel, type HTTPResponse } from '@shared/types'
 import { useRequestManager } from '@renderer/contexts/useRequestManager'
+import { RequestManagerProvider } from '@renderer/contexts/RequestManagerContext'
+import { useI18n } from '@renderer/contexts/useI18n'
+import { useCollectionStore, useHistoryStore } from '@renderer/stores'
 
-function createEmptyRequest(): RequestModel {
+function createEmptyRequest(
+  i18nT: (key: string, params?: Record<string, string | number> | undefined) => string
+): RequestModel {
   const now = new Date().toISOString()
   return {
     id: uuidv4(),
-    name: 'New Request',
+    name: i18nT('request.name.new'),
     method: HTTPMethod.GET,
     url: '',
     starred: false,
@@ -32,9 +41,21 @@ function createEmptyRequest(): RequestModel {
   }
 }
 
-export default function RequestPage(): React.JSX.Element {
+function WorkspaceInner(): React.JSX.Element {
+  const { id: workspaceId } = useParams<{ id: string }>()
   const requestManager = useRequestManager()
-  const [tabs, setTabs] = useState<RequestModel[]>(() => [createEmptyRequest()])
+  const { t: i18nT } = useI18n()
+  const hydrateCollections = useCollectionStore((s) => s.hydrate)
+  const hydrateHistory = useHistoryStore((s) => s.hydrate)
+
+  // Rehydrate collections & history when workspace changes
+  useEffect(() => {
+    if (workspaceId) {
+      void hydrateCollections(workspaceId)
+      void hydrateHistory(workspaceId)
+    }
+  }, [workspaceId, hydrateCollections, hydrateHistory])
+  const [tabs, setTabs] = useState<RequestModel[]>(() => [createEmptyRequest(i18nT)])
   const [activeTabId, setActiveTabId] = useState<string>(tabs[0].id)
   const [splitPercent, setSplitPercent] = useState<number>(
     () => requestManager.config?.layoutSplitPercent ?? 40
@@ -51,7 +72,7 @@ export default function RequestPage(): React.JSX.Element {
     activeIdRef.current = activeTabId
   }, [activeTabId])
 
-  // Register tab open handler
+  // Register tab open handler (called by sidebar collections/history)
   React.useEffect(() => {
     requestManager.registerOpenHandler((req, opts) => {
       const incoming = req.id ? req : { ...req, id: uuidv4() }
@@ -82,7 +103,7 @@ export default function RequestPage(): React.JSX.Element {
     return () => requestManager.registerCloseHandler(null)
   }, [requestManager])
 
-  // Save layout split percent
+  // Save layout split percent to config
   React.useEffect(() => {
     if (requestManager.config) {
       window.api?.saveConfig({ layoutSplitPercent: splitPercent }).catch(() => {})
@@ -91,10 +112,11 @@ export default function RequestPage(): React.JSX.Element {
 
   // Tab operations
   const addTab = useCallback(() => {
-    const newReq = createEmptyRequest()
+    const newReq = createEmptyRequest(i18nT)
+    newReq.name = i18nT('request.name.new')
     setTabs((prev) => [...prev, newReq])
     setActiveTabId(newReq.id)
-  }, [])
+  }, [i18nT])
 
   const closeTab = useCallback((id: string) => {
     setTabs((prev) => {
@@ -146,8 +168,9 @@ export default function RequestPage(): React.JSX.Element {
         )
       )
 
-      // Save to history
+      // Save to history (scoped to current workspace)
       requestManager.addHistory({
+        workspaceId,
         method: request.method,
         url: request.url,
         statusCode: resp.status,
@@ -156,7 +179,7 @@ export default function RequestPage(): React.JSX.Element {
         responseSnapshot: resp.body ? JSON.stringify(resp).slice(0, 10000) : undefined
       })
     } catch (err) {
-      console.error('[RequestPage] Send failed:', err)
+      console.error('[Workspace] Send failed:', err)
       setTabs((prev) =>
         prev.map((t) =>
           t.id === id
@@ -164,7 +187,8 @@ export default function RequestPage(): React.JSX.Element {
                 ...t,
                 response: {
                   status: 0,
-                  statusText: 'Request Failed',
+                  statusText: i18nT('response.error.failed'),
+                  body: (err as Error).message,
                   error: { code: 'UNKNOWN', message: (err as Error).message }
                 },
                 updateTime: new Date().toISOString()
@@ -175,7 +199,7 @@ export default function RequestPage(): React.JSX.Element {
     } finally {
       sendingRef.current.delete(id)
     }
-  }, [requestManager])
+  }, [requestManager, i18nT, workspaceId])
 
   const handleCancel = useCallback((id: string) => {
     window.api.abortRequest(id)
@@ -195,57 +219,83 @@ export default function RequestPage(): React.JSX.Element {
   const isSending = sendingRef.current.has(activeTabId)
 
   return (
-    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-      {/* Tab bar */}
-      <TabBar
-        tabs={tabs}
-        activeId={activeTabId}
-        onSelect={setActiveTabId}
-        onClose={closeTab}
-        onAdd={addTab}
-        onRename={handleRename}
-      />
+    <Box sx={{ display: 'flex', height: '100%', overflow: 'hidden' }}>
+      <Sidebar workspaceId={workspaceId} />
+      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+        {/* Tab bar */}
+        <TabBar
+          tabs={tabs}
+          activeId={activeTabId}
+          onSelect={setActiveTabId}
+          onClose={closeTab}
+          onAdd={addTab}
+          onRename={handleRename}
+        />
 
-      {/* Request/Response split area */}
-      <Box sx={{ flex: 1, minHeight: 0, p: 1, display: 'flex', flexDirection: 'column' }}>
-        {/* URL bar */}
-        <Paper elevation={1} sx={{ p: 1, mb: 1, flex: 'none' }}>
-          <AddressBar
-            request={activeTab}
-            onChange={handleRequestChange}
-            onSend={handleSend}
-            isLoading={isSending}
-            onCancel={() => handleCancel(activeTabId)}
-          />
-        </Paper>
+        {/* Request/Response split area */}
+        <Box sx={{ flex: 1, minHeight: 0, p: 1, display: 'flex', flexDirection: 'column' }}>
+          {/* URL bar */}
+          <Paper elevation={1} sx={{ p: 1, mb: 1, flex: 'none' }}>
+            <AddressBar
+              request={activeTab}
+              onChange={handleRequestChange}
+              onSend={handleSend}
+              isLoading={isSending}
+              onCancel={() => handleCancel(activeTabId)}
+            />
+          </Paper>
 
-        {/* Left-right split */}
-        <Box
-          id="req-resp-container"
-          sx={{ display: 'flex', flex: 1, gap: 1, minHeight: 0, minWidth: 0 }}
-        >
-          {/* Left: Request editor */}
-          <Box sx={{ width: `${splitPercent}%`, display: 'flex', minWidth: 0 }}>
-            <Paper
-              sx={{ p: 1, flex: 1, display: 'flex', minHeight: 0, minWidth: 0, overflow: 'auto' }}
-            >
-              <RequestArea request={activeTab} onChange={handleRequestChange} />
-            </Paper>
-          </Box>
+          {/* Left-right split */}
+          <Box
+            id="req-resp-container"
+            sx={{ display: 'flex', flex: 1, gap: 1, minHeight: 0, minWidth: 0 }}
+          >
+            {/* Left: Request editor */}
+            <Box sx={{ width: `${splitPercent}%`, display: 'flex', minWidth: 0 }}>
+              <Paper
+                sx={{
+                  p: 1,
+                  flex: 1,
+                  display: 'flex',
+                  minHeight: 0,
+                  minWidth: 0,
+                  overflow: 'auto'
+                }}
+              >
+                <RequestArea request={activeTab} onChange={handleRequestChange} />
+              </Paper>
+            </Box>
 
-          {/* Splitter */}
-          <Splitter onDrag={handleSplitDrag} />
+            {/* Splitter */}
+            <Splitter onDrag={handleSplitDrag} />
 
-          {/* Right: Response viewer */}
-          <Box sx={{ width: `${100 - splitPercent}%`, display: 'flex', minWidth: 0 }}>
-            <Paper
-              sx={{ p: 1, flex: 1, display: 'flex', minHeight: 0, minWidth: 0, overflow: 'auto' }}
-            >
-              <ResponseArea response={activeTab.response} />
-            </Paper>
+            {/* Right: Response viewer */}
+            <Box sx={{ width: `${100 - splitPercent}%`, display: 'flex', minWidth: 0 }}>
+              <Paper
+                sx={{
+                  p: 1,
+                  flex: 1,
+                  display: 'flex',
+                  minHeight: 0,
+                  minWidth: 0,
+                  overflow: 'auto'
+                }}
+              >
+                <ResponseArea response={activeTab.response} />
+              </Paper>
+            </Box>
           </Box>
         </Box>
       </Box>
+      <ToolSideBar request={activeTab} />
     </Box>
+  )
+}
+
+export default function WorkspacePage(): React.JSX.Element {
+  return (
+    <RequestManagerProvider>
+      <WorkspaceInner />
+    </RequestManagerProvider>
   )
 }

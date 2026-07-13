@@ -1,6 +1,8 @@
 import React from 'react'
+import { List } from '@mui/material'
 import type { Collection, CollectionFolder, RequestModel } from '@shared/types'
 import CollectionFolderNode from './CollectionFolderNode'
+import CollectionRequestNode from './CollectionRequestNode'
 
 type TreeNode = Collection | CollectionFolder
 
@@ -25,17 +27,40 @@ export default function CollectionTreeNode({
   onAddFolder,
   onExport
 }: CollectionTreeNodeProps): React.JSX.Element {
-  // A Collection is a root node — it has a name and may have folders/requests
+  const allRequests = node.requests || []
+  // Requests without a folderId are top-level
+  const topLevelRequests = allRequests.filter((r) => !r.folderId)
+
   return (
-    <CollectionFolderNode
-      node={node}
-      level={level}
-      onOpenRequest={onOpenRequest}
-      onRemove={onRemove}
-      onAddRequest={onAddRequest}
-      onEdit={onEdit}
-      onAddFolder={(parentId) => onAddFolder(node.id, parentId)}
-      onExport={onExport}
-    />
+    <List disablePadding>
+      {(node.folders || []).map((f) => (
+        <CollectionFolderNode
+          key={f.id}
+          node={f}
+          level={level}
+          childRequests={allRequests.filter((r) => r.folderId === f.id)}
+          onOpenRequest={onOpenRequest}
+          onRemove={onRemove}
+          onAddRequest={onAddRequest}
+          onEdit={onEdit}
+          onAddFolder={(parentId) => onAddFolder(node.id, parentId)}
+          onExport={onExport}
+        />
+      ))}
+      {topLevelRequests.map(
+        (r) =>
+          r && (
+            <CollectionRequestNode
+              key={r.id}
+              node={r}
+              level={level}
+              onOpenRequest={onOpenRequest}
+              onRemove={onRemove}
+              onEdit={onEdit}
+              onExport={onExport}
+            />
+          )
+      )}
+    </List>
   )
 }

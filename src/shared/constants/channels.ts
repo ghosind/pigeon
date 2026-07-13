@@ -17,6 +17,13 @@ export const IPC_DIALOG_SAVE_FILE = 'dialog:save-file'
 export const IPC_CONFIG_GET = 'config:get'
 export const IPC_CONFIG_SAVE = 'config:save'
 
+// -- Workspaces ------------------------------------------------------------
+export const IPC_WORKSPACE_LIST = 'workspace:list'
+export const IPC_WORKSPACE_GET = 'workspace:get'
+export const IPC_WORKSPACE_CREATE = 'workspace:create'
+export const IPC_WORKSPACE_UPDATE = 'workspace:update'
+export const IPC_WORKSPACE_DELETE = 'workspace:delete'
+
 // -- Collections -----------------------------------------------------------
 export const IPC_COLLECTION_LIST = 'collection:list'
 export const IPC_COLLECTION_GET = 'collection:get'
@@ -78,6 +85,11 @@ export const IPC_ENV_VAR_LIST = 'env:var:list'
 export const IPC_ENV_VAR_BATCH_SAVE = 'env:var:batch-save'
 export const IPC_ENV_VAR_DELETE = 'env:var:delete'
 
+// -- Global Variables ------------------------------------------------------
+export const IPC_GLOBAL_VAR_LIST = 'global-var:list'
+export const IPC_GLOBAL_VAR_SAVE = 'global-var:save'
+export const IPC_GLOBAL_VAR_DELETE = 'global-var:delete'
+
 // -- History ---------------------------------------------------------------
 export const IPC_HISTORY_LIST = 'history:list'
 export const IPC_HISTORY_SAVE = 'history:save'
@@ -98,6 +110,33 @@ export const IPC_RUNNER_EXECUTE = 'runner:execute'
 export const IPC_COOKIE_LIST = 'cookie:list'
 export const IPC_COOKIE_SAVE = 'cookie:save'
 export const IPC_COOKIE_DELETE = 'cookie:delete'
+
+// -- Proxy Config ----------------------------------------------------------
+export const IPC_PROXY_LIST = 'proxy:list'
+export const IPC_PROXY_GET = 'proxy:get'
+export const IPC_PROXY_CREATE = 'proxy:create'
+export const IPC_PROXY_UPDATE = 'proxy:update'
+export const IPC_PROXY_DELETE = 'proxy:delete'
+
+// -- Client Certificates ---------------------------------------------------
+export const IPC_CERT_LIST = 'cert:list'
+export const IPC_CERT_CREATE = 'cert:create'
+export const IPC_CERT_UPDATE = 'cert:update'
+export const IPC_CERT_DELETE = 'cert:delete'
+
+// -- Import / Export -------------------------------------------------------
+export const IPC_IMPORT_POSTMAN = 'import:postman'
+export const IPC_IMPORT_OPENAPI = 'import:openapi'
+export const IPC_IMPORT_SWAGGER = 'import:swagger'
+export const IPC_EXPORT_POSTMAN = 'export:postman'
+export const IPC_EXPORT_OPENAPI = 'export:openapi'
+
+// -- Code Snippet ----------------------------------------------------------
+export const IPC_CODE_SNIPPET_GENERATE = 'code-snippet:generate'
+
+// -- File Operations -------------------------------------------------------
+export const IPC_FILE_SAVE_RESPONSE = 'file:save-response'
+export const IPC_FILE_READ_CERT = 'file:read-cert'
 export const IPC_COOKIE_CLEAR = 'cookie:clear'
 
 // -- Search ----------------------------------------------------------------
@@ -112,9 +151,7 @@ export const IPC_DB_CLEANUP = 'db:cleanup'
 export const IPC_VAR_RESOLVE = 'var:resolve'
 
 // -- Import / Export -------------------------------------------------------
-export const IPC_IMPORT_POSTMAN = 'import:postman'
 export const IPC_IMPORT_CURL = 'import:curl'
-export const IPC_EXPORT_POSTMAN = 'export:postman'
 
 // -- Tabs ------------------------------------------------------------------
 export const IPC_TABS_SAVE = 'tabs:save'

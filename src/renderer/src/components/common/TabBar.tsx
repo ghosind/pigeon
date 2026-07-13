@@ -75,13 +75,21 @@ export default function TabBar({
   }
 
   return (
-    <Box sx={{ display: 'flex', alignItems: 'center', bgcolor: 'background.paper' }}>
+    <Box
+      sx={{
+        display: 'flex',
+        alignItems: 'center',
+        bgcolor: 'background.paper',
+        overflow: 'hidden',
+        minWidth: 0
+      }}
+    >
       <Tabs
         value={activeId}
         onChange={(_, value) => onSelect(String(value))}
         variant="scrollable"
         scrollButtons="auto"
-        sx={{ minHeight: 40 }}
+        sx={{ minHeight: 40, flex: 1, minWidth: 0 }}
       >
         {tabs.map((req) => {
           const method = (req.method || '').toString().toUpperCase()

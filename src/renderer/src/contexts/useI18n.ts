@@ -4,7 +4,7 @@ export type Lang = 'en' | 'zh'
 
 export type I18nContextValue = {
   lang: Lang
-  t: (key: string) => string
+  t: (key: string, params?: Record<string, string | number>) => string
   setLang: (l: Lang) => void
 }
 

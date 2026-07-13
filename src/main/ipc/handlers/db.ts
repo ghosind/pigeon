@@ -12,7 +12,10 @@ import {
   environmentRepo,
   collectionRepo,
   historyRepo,
-  cookieRepo
+  cookieRepo,
+  workspaceRepo,
+  proxyRepo,
+  globalVarRepo
 } from '../../db/repositories'
 import type { ThemeMode } from '@shared/types'
 
@@ -68,9 +71,9 @@ export function registerDbHandlers(ipc: IpcMain): void {
   })
 
   // -- Collections ---------------------------------------------------------
-  ipc.handle(channels.IPC_COLLECTION_LIST, async () => {
+  ipc.handle(channels.IPC_COLLECTION_LIST, async (_event, workspaceId?: string) => {
     try {
-      return ok(collectionRepo.listCollections())
+      return ok(collectionRepo.listCollections(workspaceId))
     } catch (err) {
       console.error('[IPC] collection:list — failed:', err)
       return fail((err as Error).message)
@@ -88,15 +91,18 @@ export function registerDbHandlers(ipc: IpcMain): void {
     }
   })
 
-  ipc.handle(channels.IPC_COLLECTION_CREATE, async (_event, name: string, description?: string) => {
-    try {
-      if (!isNonEmptyString(name)) return fail('Collection name is required')
-      return ok(collectionRepo.createCollection(name, description || ''))
-    } catch (err) {
-      console.error('[IPC] collection:create — failed:', err)
-      return fail((err as Error).message)
+  ipc.handle(
+    channels.IPC_COLLECTION_CREATE,
+    async (_event, name: string, description?: string, workspaceId?: string) => {
+      try {
+        if (!isNonEmptyString(name)) return fail('Collection name is required')
+        return ok(collectionRepo.createCollection(name, description || '', workspaceId))
+      } catch (err) {
+        console.error('[IPC] collection:create — failed:', err)
+        return fail((err as Error).message)
+      }
     }
-  })
+  )
 
   ipc.handle(
     channels.IPC_COLLECTION_UPDATE,
@@ -496,14 +502,17 @@ export function registerDbHandlers(ipc: IpcMain): void {
   })
 
   // -- History -------------------------------------------------------------
-  ipc.handle(channels.IPC_HISTORY_LIST, async (_event, limit?: number, offset?: number) => {
-    try {
-      return ok(historyRepo.listHistory(limit || 200, offset || 0))
-    } catch (err) {
-      console.error('[IPC] history:list — failed:', err)
-      return fail((err as Error).message)
+  ipc.handle(
+    channels.IPC_HISTORY_LIST,
+    async (_event, limit?: number, offset?: number, workspaceId?: string) => {
+      try {
+        return ok(historyRepo.listHistory(limit || 200, offset || 0, workspaceId))
+      } catch (err) {
+        console.error('[IPC] history:list — failed:', err)
+        return fail((err as Error).message)
+      }
     }
-  })
+  )
 
   ipc.handle(channels.IPC_HISTORY_SAVE, async (_event, record: Record<string, unknown>) => {
     try {
@@ -629,6 +638,154 @@ export function registerDbHandlers(ipc: IpcMain): void {
       return ok(collectionRepo.searchAll(keyword, limit))
     } catch (err) {
       console.error('[IPC] search:global — failed:', err)
+      return fail((err as Error).message)
+    }
+  })
+
+  // -- Workspaces ----------------------------------------------------------
+  ipc.handle(channels.IPC_WORKSPACE_LIST, async () => {
+    try {
+      return ok(workspaceRepo.listWorkspaces())
+    } catch (err) {
+      console.error('[IPC] workspace:list — failed:', err)
+      return fail((err as Error).message)
+    }
+  })
+
+  ipc.handle(channels.IPC_WORKSPACE_GET, async (_event, id: string) => {
+    try {
+      if (!isNonEmptyString(id)) return fail('Invalid workspace ID')
+      const ws = workspaceRepo.getWorkspace(id)
+      return ws ? ok(ws) : fail('Workspace not found')
+    } catch (err) {
+      console.error('[IPC] workspace:get — failed:', err)
+      return fail((err as Error).message)
+    }
+  })
+
+  ipc.handle(channels.IPC_WORKSPACE_CREATE, async (_event, name: string, description?: string) => {
+    try {
+      if (!isNonEmptyString(name)) return fail('Workspace name is required')
+      return ok(workspaceRepo.createWorkspace(name, description || ''))
+    } catch (err) {
+      console.error('[IPC] workspace:create — failed:', err)
+      return fail((err as Error).message)
+    }
+  })
+
+  ipc.handle(
+    channels.IPC_WORKSPACE_UPDATE,
+    async (_event, id: string, data: Record<string, unknown>) => {
+      try {
+        if (!isNonEmptyString(id)) return fail('Invalid workspace ID')
+        workspaceRepo.updateWorkspace(id, data as Partial<{ name: string; description: string }>)
+        return ok({ updated: true })
+      } catch (err) {
+        console.error('[IPC] workspace:update — failed:', err)
+        return fail((err as Error).message)
+      }
+    }
+  )
+
+  ipc.handle(channels.IPC_WORKSPACE_DELETE, async (_event, id: string) => {
+    try {
+      if (!isNonEmptyString(id)) return fail('Invalid workspace ID')
+      workspaceRepo.deleteWorkspace(id)
+      return ok({ deleted: true })
+    } catch (err) {
+      console.error('[IPC] workspace:delete — failed:', err)
+      return fail((err as Error).message)
+    }
+  })
+
+  // -- Proxy Config (NEW) --------------------------------------------------
+  ipc.handle(channels.IPC_PROXY_LIST, async () => {
+    try {
+      return ok(proxyRepo.listProxies())
+    } catch (err) {
+      console.error('[IPC] proxy:list — failed:', err)
+      return fail((err as Error).message)
+    }
+  })
+
+  ipc.handle(channels.IPC_PROXY_GET, async (_event, id: string) => {
+    try {
+      if (!isNonEmptyString(id)) return fail('Invalid proxy ID')
+      const p = proxyRepo.getProxy(id)
+      return p ? ok(p) : fail('Proxy not found')
+    } catch (err) {
+      console.error('[IPC] proxy:get — failed:', err)
+      return fail((err as Error).message)
+    }
+  })
+
+  ipc.handle(channels.IPC_PROXY_CREATE, async (_event, data: Record<string, unknown>) => {
+    try {
+      return ok(
+        proxyRepo.createProxy(data as unknown as Parameters<typeof proxyRepo.createProxy>[0])
+      )
+    } catch (err) {
+      console.error('[IPC] proxy:create — failed:', err)
+      return fail((err as Error).message)
+    }
+  })
+
+  ipc.handle(
+    channels.IPC_PROXY_UPDATE,
+    async (_event, id: string, data: Record<string, unknown>) => {
+      try {
+        if (!isNonEmptyString(id)) return fail('Invalid proxy ID')
+        proxyRepo.updateProxy(id, data as Parameters<typeof proxyRepo.updateProxy>[1])
+        return ok({ updated: true })
+      } catch (err) {
+        console.error('[IPC] proxy:update — failed:', err)
+        return fail((err as Error).message)
+      }
+    }
+  )
+
+  ipc.handle(channels.IPC_PROXY_DELETE, async (_event, id: string) => {
+    try {
+      if (!isNonEmptyString(id)) return fail('Invalid proxy ID')
+      proxyRepo.deleteProxy(id)
+      return ok({ deleted: true })
+    } catch (err) {
+      console.error('[IPC] proxy:delete — failed:', err)
+      return fail((err as Error).message)
+    }
+  })
+
+  // -- Global Variables (NEW) ----------------------------------------------
+  ipc.handle(channels.IPC_GLOBAL_VAR_LIST, async () => {
+    try {
+      return ok(globalVarRepo.listGlobalVars())
+    } catch (err) {
+      console.error('[IPC] global-var:list — failed:', err)
+      return fail((err as Error).message)
+    }
+  })
+
+  ipc.handle(
+    channels.IPC_GLOBAL_VAR_SAVE,
+    async (_event, key: string, value: string, description?: string) => {
+      try {
+        if (!isNonEmptyString(key)) return fail('Variable key is required')
+        globalVarRepo.saveGlobalVar(key, value || '', description)
+        return ok({ saved: true })
+      } catch (err) {
+        console.error('[IPC] global-var:save — failed:', err)
+        return fail((err as Error).message)
+      }
+    }
+  )
+
+  ipc.handle(channels.IPC_GLOBAL_VAR_DELETE, async (_event, key: string) => {
+    try {
+      if (!isNonEmptyString(key)) return fail('Variable key is required')
+      globalVarRepo.deleteGlobalVar(key)
+      return ok({ deleted: true })
+    } catch (err) {
+      console.error('[IPC] global-var:delete — failed:', err)
       return fail((err as Error).message)
     }
   })

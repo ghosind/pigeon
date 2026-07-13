@@ -11,12 +11,16 @@ function rowToConfig(row: Record<string, unknown>): SystemConfig {
   return {
     id: row.id as number,
     theme: (row.theme as ThemeMode) || ThemeMode.System,
+    language: (row.language as SystemConfig['language']) || 'en',
+    fontSize: (row.font_size as number) || 13,
     timeout: (row.timeout as number) || 30000,
     ignoreSSL: Boolean(row.ignore_ssl),
     enableProxy: Boolean(row.enable_proxy),
     proxyUrl: (row.proxy_url as string) || '',
     historyRetention: (row.history_retention as number) || 30,
     layoutSplitPercent: (row.layout_split_percent as number) ?? 50,
+    saveResponseInHistory:
+      row.save_response_in_history !== undefined ? Boolean(row.save_response_in_history) : true,
     createTime: row.create_time as string,
     updateTime: row.update_time as string
   }
@@ -32,12 +36,15 @@ export function getConfig(): SystemConfig {
     return {
       id: 1,
       theme: ThemeMode.System,
+      language: 'en',
+      fontSize: 13,
       timeout: 30000,
       ignoreSSL: false,
       enableProxy: false,
       proxyUrl: '',
       historyRetention: 30,
       layoutSplitPercent: 50,
+      saveResponseInHistory: true,
       createTime: now,
       updateTime: now
     }
@@ -54,18 +61,21 @@ export function saveConfig(config: Partial<SystemConfig>): SystemConfig {
 
   run(
     `UPDATE system_config SET
-      theme = ?, timeout = ?, ignore_ssl = ?, enable_proxy = ?,
-      proxy_url = ?, history_retention = ?, layout_split_percent = ?,
+      theme = ?, language = ?, font_size = ?, timeout = ?, ignore_ssl = ?, enable_proxy = ?,
+      proxy_url = ?, history_retention = ?, layout_split_percent = ?, save_response_in_history = ?,
       update_time = datetime('now')
      WHERE id = 1`,
     [
       merged.theme || ThemeMode.System,
+      merged.language || 'en',
+      merged.fontSize || 13,
       merged.timeout || 30000,
       merged.ignoreSSL ? 1 : 0,
       merged.enableProxy ? 1 : 0,
       merged.proxyUrl || '',
       merged.historyRetention || 30,
-      merged.layoutSplitPercent ?? 50
+      merged.layoutSplitPercent ?? 50,
+      merged.saveResponseInHistory ? 1 : 0
     ]
   )
 

@@ -13,6 +13,7 @@ import type { RequestHistoryRecord, HTTPMethod } from '@shared/types'
 function rowToHistory(row: Record<string, unknown>): RequestHistoryRecord {
   return {
     id: row.id as string,
+    workspaceId: (row.workspace_id as string) || undefined,
     method: (row.method as HTTPMethod) || 'GET',
     url: row.url as string,
     statusCode: (row.status_code as number) ?? undefined,
@@ -28,8 +29,15 @@ function rowToHistory(row: Record<string, unknown>): RequestHistoryRecord {
 // CRUD
 // ---------------------------------------------------------------------------
 
-/** List history records, newest first. */
-export function listHistory(limit = 200, offset = 0): RequestHistoryRecord[] {
+/** List history records, newest first, optionally scoped to workspace. */
+export function listHistory(limit = 200, offset = 0, workspaceId?: string): RequestHistoryRecord[] {
+  if (workspaceId) {
+    return all<Record<string, unknown>>(
+      `SELECT * FROM request_history WHERE deleted = 0 AND workspace_id = ?
+       ORDER BY create_time DESC LIMIT ? OFFSET ?`,
+      [workspaceId, limit, offset]
+    ).map(rowToHistory)
+  }
   return all<Record<string, unknown>>(
     `SELECT * FROM request_history WHERE deleted = 0
      ORDER BY create_time DESC LIMIT ? OFFSET ?`,
@@ -45,15 +53,17 @@ export function saveHistory(record: {
   costTime?: number
   requestSnapshot: string
   responseSnapshot?: string
+  workspaceId?: string
 }): RequestHistoryRecord {
   const id = uuidv4()
   const now = new Date().toISOString()
 
   run(
-    `INSERT INTO request_history (id, method, url, status_code, cost_time, request_full, response_full, create_time)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO request_history (id, workspace_id, method, url, status_code, cost_time, request_full, response_full, create_time)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       id,
+      record.workspaceId || null,
       record.method,
       record.url,
       record.statusCode ?? null,

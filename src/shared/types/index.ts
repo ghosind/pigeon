@@ -11,6 +11,10 @@
  *   history.ts      — RequestHistoryRecord
  *   test.ts         — TestScript
  *   config.ts       — SystemConfig
+ *   workspace.ts    — Workspace
+ *   proxy.ts        — ProxyConfig
+ *   cert.ts         — ClientCert
+ *   globalVar.ts    — GlobalVariable
  */
 
 export * from './enums'
@@ -21,3 +25,7 @@ export * from './environment'
 export * from './history'
 export * from './test'
 export * from './config'
+export * from './workspace'
+export * from './proxy'
+export * from './cert'
+export * from './globalVar'

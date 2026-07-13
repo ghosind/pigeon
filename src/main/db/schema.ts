@@ -1,31 +1,21 @@
 /**
- * Database schema — all table definitions, indexes, and migration logic.
+ * Database schema — all table definitions, indexes, and column migration.
  *
  * This module defines the complete SQLite schema for the Pigeon API client.
  * It is idempotent: calling initSchema() will create tables only if they
- * don't already exist, and will run migrations for version upgrades.
+ * don't already exist, and add missing columns for backward compatibility.
  *
- * Table list (15 tables):
- *  1. system_config
- *  2. environment
- *  3. env_variable
- *  4. collection
- *  5. collection_folder
- *  6. http_request
- *  7. request_param
- *  8. request_header
- *  9. request_body
- * 10. request_form_item
- * 11. request_auth
- * 12. request_setting
- * 13. request_history
- * 14. request_test_script
- * 15. local_cookie
+ * Table list (19 tables):
+ *  1. system_config      8. request_header      15. local_cookie
+ *  2. environment        9. request_body        16. workspace
+ *  3. env_variable      10. request_form_item   17. proxy_config
+ *  4. collection        11. request_auth        18. client_cert
+ *  5. collection_folder 12. request_setting     19. global_variable
+ *  6. http_request      13. request_history
+ *  7. request_param     14. request_test_script
  */
 
-import { exec, run, get } from './sqlite'
-
-const CURRENT_SCHEMA_VERSION = 1
+import { exec, run, get, all } from './sqlite'
 
 // ---------------------------------------------------------------------------
 // Table creation DDL
@@ -36,12 +26,15 @@ const DDL_STATEMENTS: string[] = [
   `CREATE TABLE IF NOT EXISTS system_config (
     id INTEGER PRIMARY KEY DEFAULT 1 CHECK (id = 1),
     theme VARCHAR(20) NOT NULL DEFAULT 'system',
+    language VARCHAR(10) NOT NULL DEFAULT 'en',
+    font_size INTEGER NOT NULL DEFAULT 13,
     timeout INTEGER NOT NULL DEFAULT 30000,
     ignore_ssl INTEGER NOT NULL DEFAULT 0,
     enable_proxy INTEGER NOT NULL DEFAULT 0,
     proxy_url VARCHAR(500) DEFAULT '',
     history_retention INTEGER NOT NULL DEFAULT 30,
     layout_split_percent INTEGER DEFAULT 50,
+    save_response_in_history INTEGER NOT NULL DEFAULT 1,
     create_time TEXT NOT NULL DEFAULT (datetime('now')),
     update_time TEXT NOT NULL DEFAULT (datetime('now'))
   )`,
@@ -76,13 +69,15 @@ const DDL_STATEMENTS: string[] = [
   // 4. Collection
   `CREATE TABLE IF NOT EXISTS collection (
     id VARCHAR(36) PRIMARY KEY,
+    workspace_id VARCHAR(36),
     name VARCHAR(255) NOT NULL,
     description TEXT DEFAULT '',
     starred INTEGER NOT NULL DEFAULT 0,
     sort INTEGER NOT NULL DEFAULT 0,
     deleted INTEGER NOT NULL DEFAULT 0,
     create_time TEXT NOT NULL DEFAULT (datetime('now')),
-    update_time TEXT NOT NULL DEFAULT (datetime('now'))
+    update_time TEXT NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY (workspace_id) REFERENCES workspace(id) ON DELETE CASCADE
   )`,
 
   // 5. Collection folder
@@ -200,6 +195,7 @@ const DDL_STATEMENTS: string[] = [
   // 13. Request history
   `CREATE TABLE IF NOT EXISTS request_history (
     id VARCHAR(36) PRIMARY KEY,
+    workspace_id VARCHAR(36),
     method VARCHAR(10) NOT NULL,
     url TEXT NOT NULL,
     status_code INTEGER,
@@ -207,7 +203,8 @@ const DDL_STATEMENTS: string[] = [
     request_full TEXT,
     response_full TEXT,
     deleted INTEGER NOT NULL DEFAULT 0,
-    create_time TEXT NOT NULL DEFAULT (datetime('now'))
+    create_time TEXT NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY (workspace_id) REFERENCES workspace(id) ON DELETE CASCADE
   )`,
 
   // 14. Test script
@@ -230,6 +227,50 @@ const DDL_STATEMENTS: string[] = [
     path VARCHAR(500) DEFAULT '/',
     create_time TEXT NOT NULL DEFAULT (datetime('now')),
     update_time TEXT NOT NULL DEFAULT (datetime('now'))
+  )`,
+
+  // 16. Workspace — top-level organizational unit
+  `CREATE TABLE IF NOT EXISTS workspace (
+    id VARCHAR(36) PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    description TEXT DEFAULT '',
+    create_time TEXT NOT NULL DEFAULT (datetime('now')),
+    update_time TEXT NOT NULL DEFAULT (datetime('now'))
+  )`,
+
+  // 17. Proxy configuration
+  `CREATE TABLE IF NOT EXISTS proxy_config (
+    id VARCHAR(36) PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    proxy_type VARCHAR(10) NOT NULL DEFAULT 'http',
+    host VARCHAR(255) NOT NULL,
+    port INTEGER NOT NULL DEFAULT 8080,
+    username VARCHAR(255) DEFAULT '',
+    password VARCHAR(500) DEFAULT '',
+    is_active INTEGER NOT NULL DEFAULT 0,
+    create_time TEXT NOT NULL DEFAULT (datetime('now')),
+    update_time TEXT NOT NULL DEFAULT (datetime('now'))
+  )`,
+
+  // 18. Client certificate
+  `CREATE TABLE IF NOT EXISTS client_cert (
+    id VARCHAR(36) PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    cert_path TEXT NOT NULL DEFAULT '',
+    key_path TEXT DEFAULT '',
+    password VARCHAR(500) DEFAULT '',
+    create_time TEXT NOT NULL DEFAULT (datetime('now')),
+    update_time TEXT NOT NULL DEFAULT (datetime('now'))
+  )`,
+
+  // 19. Global variables (shared across all workspaces)
+  `CREATE TABLE IF NOT EXISTS global_variable (
+    key VARCHAR(255) PRIMARY KEY,
+    value TEXT NOT NULL DEFAULT '',
+    description VARCHAR(500) DEFAULT '',
+    enabled INTEGER NOT NULL DEFAULT 1,
+    create_time TEXT NOT NULL DEFAULT (datetime('now')),
+    update_time TEXT NOT NULL DEFAULT (datetime('now'))
   )`
 ]
 
@@ -243,6 +284,7 @@ const INDEX_STATEMENTS: string[] = [
   'CREATE INDEX IF NOT EXISTS idx_env_var_env_id ON env_variable(env_id)',
   'CREATE INDEX IF NOT EXISTS idx_env_var_key ON env_variable(key)',
   'CREATE INDEX IF NOT EXISTS idx_collection_starred ON collection(starred)',
+  'CREATE INDEX IF NOT EXISTS idx_collection_workspace ON collection(workspace_id)',
   'CREATE INDEX IF NOT EXISTS idx_folder_collection ON collection_folder(collection_id)',
   'CREATE INDEX IF NOT EXISTS idx_folder_parent ON collection_folder(parent_id)',
   'CREATE INDEX IF NOT EXISTS idx_request_collection ON http_request(collection_id)',
@@ -254,20 +296,17 @@ const INDEX_STATEMENTS: string[] = [
   'CREATE INDEX IF NOT EXISTS idx_header_request ON request_header(request_id)',
   'CREATE INDEX IF NOT EXISTS idx_form_item_body ON request_form_item(body_id)',
   'CREATE INDEX IF NOT EXISTS idx_history_time ON request_history(create_time DESC)',
+  'CREATE INDEX IF NOT EXISTS idx_history_workspace ON request_history(workspace_id)',
   'CREATE INDEX IF NOT EXISTS idx_history_method ON request_history(method)',
   'CREATE INDEX IF NOT EXISTS idx_history_url ON request_history(url)',
   'CREATE INDEX IF NOT EXISTS idx_history_status ON request_history(status_code)',
   'CREATE INDEX IF NOT EXISTS idx_test_request ON request_test_script(request_id)',
   'CREATE INDEX IF NOT EXISTS idx_cookie_domain ON local_cookie(domain)',
-  'CREATE INDEX IF NOT EXISTS idx_cookie_expire ON local_cookie(expire_time)'
+  'CREATE INDEX IF NOT EXISTS idx_cookie_expire ON local_cookie(expire_time)',
+  'CREATE INDEX IF NOT EXISTS idx_workspace_name ON workspace(name)',
+  'CREATE INDEX IF NOT EXISTS idx_proxy_active ON proxy_config(is_active)',
+  'CREATE INDEX IF NOT EXISTS idx_global_var_key ON global_variable(key)'
 ]
-
-// ---------------------------------------------------------------------------
-// Schema version table
-// ---------------------------------------------------------------------------
-
-const VERSION_TABLE_DDL =
-  "CREATE TABLE IF NOT EXISTS schema_version (version INTEGER PRIMARY KEY, applied_at TEXT NOT NULL DEFAULT (datetime('now')))"
 
 // ---------------------------------------------------------------------------
 // Public API
@@ -275,7 +314,7 @@ const VERSION_TABLE_DDL =
 
 /**
  * Initialize the database schema. Creates all tables and indexes if they
- * don't exist, and applies pending migrations.
+ * don't already exist, and adds missing columns for backward compatibility.
  *
  * This function is idempotent and safe to call on every app startup.
  */
@@ -283,77 +322,84 @@ export function initSchema(): void {
   exec('PRAGMA journal_mode=WAL')
   exec('PRAGMA foreign_keys=ON')
 
-  // Create version tracking table
-  exec(VERSION_TABLE_DDL)
-
-  const currentVersion = getCurrentSchemaVersion()
-
   // Run all DDL (idempotent via IF NOT EXISTS)
   for (const ddl of DDL_STATEMENTS) {
-    exec(ddl)
+    try {
+      exec(ddl)
+    } catch (err) {
+      console.error('[DB] DDL failed:', (err as Error).message)
+    }
   }
 
   for (const idxDdl of INDEX_STATEMENTS) {
-    exec(idxDdl)
+    try {
+      exec(idxDdl)
+    } catch (err) {
+      console.error('[DB] Index creation failed:', (err as Error).message)
+    }
   }
 
   // Insert default system config if not present
   ensureDefaultConfig()
 
-  // Apply migrations if needed
-  if (currentVersion < CURRENT_SCHEMA_VERSION) {
-    applyMigrations(currentVersion)
-  }
+  // Ensure missing columns exist on existing databases (no-op if already present)
+  ensureSystemConfigColumns()
+  ensureWorkspaceColumns()
 }
 
 // ---------------------------------------------------------------------------
 // Internal helpers
 // ---------------------------------------------------------------------------
 
-function getCurrentSchemaVersion(): number {
-  try {
-    const row = get('SELECT MAX(version) as version FROM schema_version') as
-      | { version: number | null }
-      | undefined
-    return row?.version ?? 0
-  } catch {
-    return 0
-  }
-}
-
 function ensureDefaultConfig(): void {
   const row = get('SELECT id FROM system_config WHERE id = 1') as { id: number } | undefined
   if (!row) {
     run(
-      `INSERT OR IGNORE INTO system_config (id, theme, timeout, ignore_ssl, enable_proxy, proxy_url, history_retention)
-       VALUES (1, 'system', 30000, 0, 0, '', 30)`
+      `INSERT OR IGNORE INTO system_config
+        (id, theme, language, font_size, timeout, ignore_ssl, enable_proxy, proxy_url,
+         history_retention, layout_split_percent, save_response_in_history)
+       VALUES (1, 'system', 'en', 13, 30000, 0, 0, '', 30, 50, 1)`
     )
   }
 }
 
-/**
- * Apply pending schema migrations in order.
- * Each migration is identified by its target version number.
- */
-function applyMigrations(fromVersion: number): void {
-  // Migration v0 → v1: baseline, already handled by CREATE TABLE IF NOT EXISTS
-  // Future migrations should check fromVersion to conditionally apply.
-  if (fromVersion < CURRENT_SCHEMA_VERSION) {
-    // Record that all migrations up to CURRENT_SCHEMA_VERSION are applied
-    exec('BEGIN TRANSACTION')
-    try {
-      run('INSERT OR REPLACE INTO schema_version (version) VALUES (?)', [CURRENT_SCHEMA_VERSION])
-      exec('COMMIT')
-    } catch (err) {
-      exec('ROLLBACK')
-      throw err
+/** Silently add missing columns to system_config for databases created before the column existed. */
+function ensureSystemConfigColumns(): void {
+  type ColInfo = { name: string }
+  const columns = all<ColInfo>('PRAGMA table_info(system_config)').map((c) => c.name)
+
+  const addColumn = (col: string, def: string): void => {
+    if (!columns.includes(col)) {
+      exec(`ALTER TABLE system_config ADD COLUMN ${col} ${def}`)
     }
   }
+
+  addColumn('language', "VARCHAR(10) NOT NULL DEFAULT 'en'")
+  addColumn('font_size', 'INTEGER NOT NULL DEFAULT 13')
+  addColumn('save_response_in_history', 'INTEGER NOT NULL DEFAULT 1')
 }
 
-/**
- * Get the current schema version for diagnostics.
- */
-export function getSchemaVersion(): number {
-  return getCurrentSchemaVersion()
+/** Add workspace_id to collection and request_history for existing databases. */
+function ensureWorkspaceColumns(): void {
+  type ColInfo = { name: string }
+
+  try {
+    const collCols = all<ColInfo>('PRAGMA table_info(collection)').map((c) => c.name)
+    if (!collCols.includes('workspace_id')) {
+      exec('ALTER TABLE collection ADD COLUMN workspace_id VARCHAR(36)')
+      console.log('[DB] Migration: added workspace_id to collection')
+    }
+  } catch (err) {
+    console.error('[DB] Migration: failed to add workspace_id to collection:', err)
+  }
+
+  try {
+    const histCols = all<ColInfo>('PRAGMA table_info(request_history)').map((c) => c.name)
+    if (!histCols.includes('workspace_id')) {
+      exec('ALTER TABLE request_history ADD COLUMN workspace_id VARCHAR(36)')
+      console.log('[DB] Migration: added workspace_id to request_history')
+    }
+  } catch (err) {
+    console.error('[DB] Migration: failed to add workspace_id to request_history:', err)
+  }
 }

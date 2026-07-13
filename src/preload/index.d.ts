@@ -11,7 +11,10 @@ import type {
   RequestHistoryRecord,
   TestScript,
   CookieInfo,
-  KeyValuePair
+  KeyValuePair,
+  Workspace,
+  ProxyConfig,
+  GlobalVariable
 } from '@shared/types'
 
 interface PigeonAPI {
@@ -26,11 +29,14 @@ interface PigeonAPI {
     partial: Partial<SystemConfig>
   ) => Promise<{ ok: boolean; data?: SystemConfig; error?: string }>
   // Collections
-  listCollections: () => Promise<{ ok: boolean; data?: Collection[]; error?: string }>
+  listCollections: (
+    workspaceId?: string
+  ) => Promise<{ ok: boolean; data?: Collection[]; error?: string }>
   getCollection: (id: string) => Promise<{ ok: boolean; data?: Collection; error?: string }>
   createCollection: (
     name: string,
-    description?: string
+    description?: string,
+    workspaceId?: string
   ) => Promise<{ ok: boolean; data?: Collection; error?: string }>
   updateCollection: (
     id: string,
@@ -110,7 +116,8 @@ interface PigeonAPI {
   // History
   listHistory: (
     limit?: number,
-    offset?: number
+    offset?: number,
+    workspaceId?: string
   ) => Promise<{ ok: boolean; data?: RequestHistoryRecord[]; error?: string }>
   saveHistory: (
     record: Partial<RequestHistoryRecord>
@@ -142,6 +149,38 @@ interface PigeonAPI {
     keyword: string,
     limit?: number
   ) => Promise<{ ok: boolean; data?: unknown; error?: string }>
+  // Workspaces
+  listWorkspaces: () => Promise<{ ok: boolean; data?: Workspace[]; error?: string }>
+  getWorkspace: (id: string) => Promise<{ ok: boolean; data?: Workspace; error?: string }>
+  createWorkspace: (
+    name: string,
+    description?: string
+  ) => Promise<{ ok: boolean; data?: Workspace; error?: string }>
+  updateWorkspace: (
+    id: string,
+    data: Partial<Workspace>
+  ) => Promise<{ ok: boolean; error?: string }>
+  deleteWorkspace: (id: string) => Promise<{ ok: boolean; error?: string }>
+  // Proxy
+  listProxies: () => Promise<{ ok: boolean; data?: ProxyConfig[]; error?: string }>
+  createProxy: (
+    data: Partial<ProxyConfig>
+  ) => Promise<{ ok: boolean; data?: ProxyConfig; error?: string }>
+  updateProxy: (id: string, data: Partial<ProxyConfig>) => Promise<{ ok: boolean; error?: string }>
+  deleteProxy: (id: string) => Promise<{ ok: boolean; error?: string }>
+  // Global Variables
+  listGlobalVars: () => Promise<{ ok: boolean; data?: GlobalVariable[]; error?: string }>
+  saveGlobalVar: (
+    key: string,
+    value: string,
+    description?: string
+  ) => Promise<{ ok: boolean; error?: string }>
+  deleteGlobalVar: (key: string) => Promise<{ ok: boolean; error?: string }>
+  // Code Snippet
+  generateCodeSnippet: (
+    data: { method: string; url: string; headers?: Record<string, string>; body?: string },
+    language: string
+  ) => Promise<{ ok: boolean; data?: string; error?: string }>
   // Tabs
   saveTabs: (tabs: unknown[]) => Promise<{ ok: boolean; error?: string }>
   loadTabs: () => Promise<{ ok: boolean; data?: unknown[]; error?: string }>

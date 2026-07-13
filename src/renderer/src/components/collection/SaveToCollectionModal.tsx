@@ -77,7 +77,9 @@ export default function SaveToCollectionModal({
   onSaved
 }: SaveToCollectionModalProps): React.ReactElement {
   const { collections, addRequestToCollection, addFolder } = useRequestManager()
-  const [selected, setSelected] = useState<string | null>(null)
+  const [selected, setSelected] = useState<string | null>(() =>
+    collections.length > 0 ? collections[0].id : null
+  )
   const [newFolderName, setNewFolderName] = useState('')
   const { t } = useI18n()
 
@@ -98,16 +100,21 @@ export default function SaveToCollectionModal({
     onClose()
   }
 
-  const handleCreateFolder = (): void => {
+  const handleCreateFolder = async (): Promise<void> => {
     if (!newFolderName.trim() || !selected) return
+    let targetCollectionId: string
+    let parentFolderId: string | null = null
+
     if (isFolderId(collections, selected)) {
       const owner = findOwningCollection(collections, selected)
-      if (owner) {
-        addFolder(newFolderName.trim(), owner.id, selected)
-      }
+      if (!owner) return
+      targetCollectionId = owner.id
+      parentFolderId = selected
     } else {
-      addFolder(newFolderName.trim(), selected)
+      targetCollectionId = selected
     }
+
+    await addFolder(newFolderName.trim(), targetCollectionId, parentFolderId)
     setNewFolderName('')
   }
 

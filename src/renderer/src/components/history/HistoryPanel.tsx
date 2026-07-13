@@ -2,11 +2,18 @@ import React, { useMemo, useCallback, useEffect, useRef, useState } from 'react'
 import { Box, List, useTheme, Paper, TextField, Button } from '@mui/material'
 import { useRequestManager } from '@renderer/contexts/useRequestManager'
 import { useI18n } from '@renderer/contexts/useI18n'
+import { useHistoryStore } from '@renderer/stores'
 import type { RequestHistoryRecord } from '@shared/types'
 import HistoryGroup from './HistoryGroup'
 
-export default function HistoryPanel(): React.JSX.Element {
-  const { history, openRequest, clearHistory, searchHistory } = useRequestManager()
+type HistoryPanelProps = {
+  workspaceId?: string
+}
+
+export default function HistoryPanel({ workspaceId }: HistoryPanelProps): React.JSX.Element {
+  const { openRequest, clearHistory, searchHistory } = useRequestManager()
+  const storeRecords = useHistoryStore((s) => s.records)
+  const storeHydrate = useHistoryStore((s) => s.hydrate)
   const theme = useTheme()
   const { t, lang } = useI18n()
   const [search, setSearch] = useState<string>('')
@@ -15,6 +22,11 @@ export default function HistoryPanel(): React.JSX.Element {
   )
   const searchSeq = useRef(0)
   const searchKeyword = search.trim()
+
+  // Hydrate history scoped to workspace on mount
+  useEffect(() => {
+    void storeHydrate(workspaceId)
+  }, [workspaceId, storeHydrate])
 
   useEffect(() => {
     const q = searchKeyword
@@ -66,7 +78,7 @@ export default function HistoryPanel(): React.JSX.Element {
   )
 
   const groups = useMemo((): Array<{ key: string; items: RequestHistoryRecord[] }> => {
-    const displayHistory = searchKeyword ? (searchResultHistory ?? []) : history
+    const displayHistory = searchKeyword ? (searchResultHistory ?? []) : storeRecords
     const map = new Map<string, RequestHistoryRecord[]>()
     displayHistory.forEach((h: RequestHistoryRecord) => {
       const key = formatGroupKey(new Date(h.createTime))
@@ -80,7 +92,7 @@ export default function HistoryPanel(): React.JSX.Element {
         (new Date(a.items[0].createTime).getTime() ?? 0)
     )
     return arr
-  }, [searchKeyword, searchResultHistory, history, formatGroupKey])
+  }, [searchKeyword, searchResultHistory, storeRecords, formatGroupKey])
 
   return (
     <Box

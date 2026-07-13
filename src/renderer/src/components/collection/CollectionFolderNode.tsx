@@ -24,6 +24,8 @@ type TreeNode = Collection | CollectionFolder
 type CollectionFolderNodeProps = {
   node: TreeNode
   level: number
+  /** Requests that belong to this folder (already filtered by folderId). */
+  childRequests?: RequestModel[]
   onOpenRequest: (req: RequestModel) => void
   onRemove: (id: string) => void
   onAddRequest: (parentId: string | null) => void
@@ -32,9 +34,12 @@ type CollectionFolderNodeProps = {
   onExport: (id: string) => void
 }
 
+const FOLD_COLLAPSE_PREFIX = 'pigeon:foldCollapse:'
+
 export default function CollectionFolderNode({
   node,
   level,
+  childRequests,
   onOpenRequest,
   onRemove,
   onAddRequest,
@@ -44,7 +49,13 @@ export default function CollectionFolderNode({
 }: CollectionFolderNodeProps): React.JSX.Element {
   const [anchor, setAnchor] = useState<null | { x: number; y: number }>(null)
   const [menuOpenNodeId, setMenuOpenNodeId] = useState<string | null>(null)
-  const [expanded, setExpanded] = useState<boolean>(true)
+  const [expanded, setExpanded] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem(FOLD_COLLAPSE_PREFIX + node.id) !== '0'
+    } catch {
+      return true
+    }
+  })
 
   const openMenu = (e: React.MouseEvent, id: string): void => {
     e.preventDefault()
@@ -57,10 +68,27 @@ export default function CollectionFolderNode({
     setMenuOpenNodeId(null)
   }
 
+  const toggleExpanded = (): void => {
+    setExpanded((prev) => {
+      const next = !prev
+      try {
+        localStorage.setItem(FOLD_COLLAPSE_PREFIX + node.id, next ? '1' : '0')
+      } catch {
+        /* ignore */
+      }
+      return next
+    })
+  }
+
+  const getChildFolders = (): CollectionFolder[] => {
+    if ('folders' in node) return (node as Collection).folders || []
+    return []
+  }
+
   return (
     <Box key={node.id}>
       <ListItemButton
-        onClick={() => setExpanded((s) => !s)}
+        onClick={toggleExpanded}
         onContextMenu={(e) => openMenu(e, node.id)}
         sx={{ pl: level * 2, display: 'flex', alignItems: 'center' }}
       >
@@ -69,7 +97,7 @@ export default function CollectionFolderNode({
             size="small"
             onClick={(e) => {
               e.stopPropagation()
-              setExpanded((s) => !s)
+              toggleExpanded()
             }}
           >
             {expanded ? <ExpandMoreIcon fontSize="small" /> : <ChevronRightIcon fontSize="small" />}
@@ -118,11 +146,13 @@ export default function CollectionFolderNode({
 
       <Collapse in={expanded} timeout="auto" unmountOnExit>
         <List disablePadding>
-          {('folders' in node ? (node as Collection).folders : [])?.map((f) => (
+          {/* Nested child folders */}
+          {getChildFolders().map((f) => (
             <CollectionFolderNode
               key={f.id}
               node={f}
               level={level + 1}
+              childRequests={[]}
               onOpenRequest={onOpenRequest}
               onRemove={onRemove}
               onAddRequest={onAddRequest}
@@ -131,7 +161,8 @@ export default function CollectionFolderNode({
               onExport={onExport}
             />
           ))}
-          {('requests' in node ? (node as Collection).requests : [])?.map(
+          {/* Requests that belong to this folder */}
+          {(childRequests || []).map(
             (r) =>
               r && (
                 <CollectionRequestNode
@@ -152,11 +183,11 @@ export default function CollectionFolderNode({
         node={node}
         anchor={anchor}
         open={Boolean(anchor) && menuOpenNodeId === node.id}
-        onAddRequest={onAddRequest}
-        onAddFolder={onAddFolder}
-        onEdit={onEdit}
-        onRemove={onRemove}
-        onExport={onExport}
+        onAddRequest={() => onAddRequest(node.id)}
+        onAddFolder={() => onAddFolder(node.id)}
+        onEdit={() => onEdit(node)}
+        onRemove={() => onRemove(node.id)}
+        onExport={() => onExport(node.id)}
         onCloseMenu={closeMenu}
       />
     </Box>
