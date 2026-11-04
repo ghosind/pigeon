@@ -1,301 +1,237 @@
-/**
- * WorkspacePage — main API debugging workspace with multi-tab support.
- *
- * Layout: LeftSidebar | [TabBar | AddressBar | RequestPanel | Splitter | ResponsePanel] | RightSidebar
- *
- * Merged from RequestPage — per-tab response state, sending tracking,
- * cancel support, tab handler registration, and proper splitter.
- */
+import { useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { ArrowRight, Download, FolderTree, Keyboard, Sparkles, Upload, Zap } from 'lucide-react';
+import { TopBar } from '../components/layout/TopBar';
+import { Sidebar } from '../components/layout/Sidebar';
+import { TabStrip } from '../components/tabs/TabStrip';
+import { AddressBar } from '../components/request/AddressBar';
+import { RequestPanel } from '../components/request/RequestPanel';
+import { ResponsePanel } from '../components/response/ResponsePanel';
+import { useActiveTab, useTabStore } from '../stores/tabStore';
+import { useCollectionStore } from '../stores/collectionStore';
+import { useUiStore } from '../stores/uiStore';
+import { useSettingsStore } from '../stores/settingsStore';
+import { useHistoryStore } from '../stores/historyStore';
+import { matchesShortcut } from '../utils/shortcuts';
+import { methodTone } from '../utils/format';
+import { unwrap } from '../utils/api';
+import { Logo } from '../components/common/Logo';
+import { useI18n } from '../i18n';
+import { ConsoleDock, WorkspaceStatusBar } from '../components/layout/ConsoleDock';
+import { CodeSidebar } from '../components/request/CodeSidebar';
 
-import React, { useState, useCallback, useRef, useEffect } from 'react'
-import { useParams } from 'react-router-dom'
-import { Box, Paper } from '@mui/material'
-import { v4 as uuidv4 } from 'uuid'
-import TabBar from '@renderer/components/common/TabBar'
-import AddressBar from '@renderer/components/request/AddressBar'
-import RequestArea from '@renderer/components/request/RequestArea'
-import ResponseArea from '@renderer/components/response/ResponseArea'
-import Splitter from '@renderer/components/common/Splitter'
-import Sidebar from '@renderer/components/common/Sidebar'
-import ToolSideBar from '@renderer/components/common/ToolSideBar'
-import { HTTPMethod, type RequestModel, type HTTPResponse } from '@shared/types'
-import { useRequestManager } from '@renderer/contexts/useRequestManager'
-import { RequestManagerProvider } from '@renderer/contexts/RequestManagerContext'
-import { useI18n } from '@renderer/contexts/useI18n'
-import { useCollectionStore, useHistoryStore } from '@renderer/stores'
+export function WorkspacePage(): React.JSX.Element {
+  const tab = useActiveTab();
+  const responseWidth = useUiStore((state) => state.responseWidth);
+  const codeSidebarOpen = useUiStore((state) => state.codeSidebarOpen);
+  const setResponseWidth = useUiStore((state) => state.setResponseWidth);
+  const shortcuts = useSettingsStore((state) => state.preference.shortcuts);
+  const requests = useCollectionStore((state) => state.requests);
+  const loaded = useCollectionStore((state) => state.loaded);
+  const autoOpened = useRef(false);
+  const layoutRef = useRef<HTMLDivElement>(null);
 
-function createEmptyRequest(
-  i18nT: (key: string, params?: Record<string, string | number> | undefined) => string
-): RequestModel {
-  const now = new Date().toISOString()
-  return {
-    id: uuidv4(),
-    name: i18nT('request.name.new'),
-    method: HTTPMethod.GET,
-    url: '',
-    starred: false,
-    sort: 0,
-    deleted: false,
-    createTime: now,
-    updateTime: now
-  }
-}
-
-function WorkspaceInner(): React.JSX.Element {
-  const { id: workspaceId } = useParams<{ id: string }>()
-  const requestManager = useRequestManager()
-  const { t: i18nT } = useI18n()
-  const hydrateCollections = useCollectionStore((s) => s.hydrate)
-  const hydrateHistory = useHistoryStore((s) => s.hydrate)
-
-  // Rehydrate collections & history when workspace changes
   useEffect(() => {
-    if (workspaceId) {
-      void hydrateCollections(workspaceId)
-      void hydrateHistory(workspaceId)
+    if (autoOpened.current || !loaded || requests.length === 0) return;
+    if (useTabStore.getState().tabs.length === 0) {
+      autoOpened.current = true;
+      useTabStore.getState().openRequest(requests[0]);
     }
-  }, [workspaceId, hydrateCollections, hydrateHistory])
-  const [tabs, setTabs] = useState<RequestModel[]>(() => [createEmptyRequest(i18nT)])
-  const [activeTabId, setActiveTabId] = useState<string>(tabs[0].id)
-  const [splitPercent, setSplitPercent] = useState<number>(
-    () => requestManager.config?.layoutSplitPercent ?? 40
-  )
-  const sendingRef = useRef<Set<string>>(new Set())
-  const tabsRef = useRef<RequestModel[]>(tabs)
-  const activeIdRef = useRef<string>(activeTabId)
+  }, [loaded, requests]);
 
-  // Keep refs in sync
-  React.useEffect(() => {
-    tabsRef.current = tabs
-  }, [tabs])
-  React.useEffect(() => {
-    activeIdRef.current = activeTabId
-  }, [activeTabId])
-
-  // Register tab open handler (called by sidebar collections/history)
-  React.useEffect(() => {
-    requestManager.registerOpenHandler((req, opts) => {
-      const incoming = req.id ? req : { ...req, id: uuidv4() }
-      setTabs((prev) => {
-        if (!prev.some((t) => t.id === incoming.id)) {
-          return [...prev, incoming]
-        }
-        return prev.map((t) => (t.id === incoming.id ? incoming : t))
-      })
-      if (opts?.active !== false) setActiveTabId(incoming.id)
-    })
-    return () => requestManager.registerOpenHandler(null)
-  }, [requestManager])
-
-  // Register close handler (Ctrl+W)
-  React.useEffect(() => {
-    requestManager.registerCloseHandler(() => {
-      const id = activeIdRef.current
-      setTabs((prev) => {
-        if (prev.length <= 1) return prev
-        const idx = prev.findIndex((t) => t.id === id)
-        const filtered = prev.filter((t) => t.id !== id)
-        const nextIdx = Math.min(idx, filtered.length - 1)
-        setActiveTabId(filtered[nextIdx].id)
-        return filtered
-      })
-    })
-    return () => requestManager.registerCloseHandler(null)
-  }, [requestManager])
-
-  // Save layout split percent to config
-  React.useEffect(() => {
-    if (requestManager.config) {
-      window.api?.saveConfig({ layoutSplitPercent: splitPercent }).catch(() => {})
-    }
-  }, [splitPercent, requestManager.config])
-
-  // Tab operations
-  const addTab = useCallback(() => {
-    const newReq = createEmptyRequest(i18nT)
-    newReq.name = i18nT('request.name.new')
-    setTabs((prev) => [...prev, newReq])
-    setActiveTabId(newReq.id)
-  }, [i18nT])
-
-  const closeTab = useCallback((id: string) => {
-    setTabs((prev) => {
-      if (prev.length <= 1) return prev
-      const idx = prev.findIndex((t) => t.id === id)
-      const filtered = prev.filter((t) => t.id !== id)
-      if (activeIdRef.current === id) {
-        const nextIdx = Math.min(idx, filtered.length - 1)
-        setActiveTabId(filtered[nextIdx].id)
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent): void => {
+      const ui = useUiStore.getState();
+      if (ui.prompt || ui.confirm || ui.saveRequestTabId) return;
+      const isCommand = (event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k';
+      if (isCommand) {
+        event.preventDefault();
+        ui.setCommandOpen(true);
+        return;
       }
-      return filtered
-    })
-  }, [])
+      const active = useTabStore.getState().tabs.find((entry) => entry.id === useTabStore.getState().activeTabId);
+      if (matchesShortcut(event, shortcuts.send) && active) {
+        event.preventDefault();
+        void useTabStore.getState().send(active.id);
+        return;
+      }
+      if (matchesShortcut(event, shortcuts.newTab)) {
+        event.preventDefault();
+        useTabStore.getState().createTab();
+        return;
+      }
+      if (matchesShortcut(event, shortcuts.closeTab) && active) {
+        event.preventDefault();
+        useTabStore.getState().requestCloseTab(active.id);
+        return;
+      }
+      if (matchesShortcut(event, shortcuts.save) && active) {
+        event.preventDefault();
+        if (active.sourceRequestId) void useTabStore.getState().saveNow(active.id);
+        else ui.openSaveRequest(active.id);
+        return;
+      }
+      if (matchesShortcut(event, shortcuts.focusUrl)) {
+        event.preventDefault();
+        document.querySelector<HTMLInputElement>('[data-url-input]')?.focus();
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [shortcuts]);
 
-  const handleRename = useCallback((id: string, name: string) => {
-    setTabs((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, name, updateTime: new Date().toISOString() } : t))
-    )
-  }, [])
-
-  const handleRequestChange = useCallback((updated: RequestModel) => {
-    setTabs((prev) => prev.map((t) => (t.id === updated.id ? updated : t)))
-  }, [])
-
-  // Send request
-  const handleSend = useCallback(async () => {
-    const id = activeIdRef.current
-    if (sendingRef.current.has(id)) return
-
-    const request = tabsRef.current.find((t) => t.id === id)
-    if (!request) return
-
-    sendingRef.current.add(id)
-
-    try {
-      const resp: HTTPResponse = await window.api.sendRequest(id, {
-        method: request.method,
-        url: request.url,
-        headers: request.headers,
-        params: request.params,
-        body: request.body,
-        auth: request.auth,
-        settings: request.settings
-      })
-
-      setTabs((prev) =>
-        prev.map((t) =>
-          t.id === id ? { ...t, response: resp, updateTime: new Date().toISOString() } : t
-        )
-      )
-
-      // Save to history (scoped to current workspace)
-      requestManager.addHistory({
-        workspaceId,
-        method: request.method,
-        url: request.url,
-        statusCode: resp.status,
-        costTime: resp.duration,
-        requestSnapshot: JSON.stringify(request),
-        responseSnapshot: resp.body ? JSON.stringify(resp).slice(0, 10000) : undefined
-      })
-    } catch (err) {
-      console.error('[Workspace] Send failed:', err)
-      setTabs((prev) =>
-        prev.map((t) =>
-          t.id === id
-            ? {
-                ...t,
-                response: {
-                  status: 0,
-                  statusText: i18nT('response.error.failed'),
-                  body: (err as Error).message,
-                  error: { code: 'UNKNOWN', message: (err as Error).message }
-                },
-                updateTime: new Date().toISOString()
-              }
-            : t
-        )
-      )
-    } finally {
-      sendingRef.current.delete(id)
-    }
-  }, [requestManager, i18nT, workspaceId])
-
-  const handleCancel = useCallback((id: string) => {
-    window.api.abortRequest(id)
-    sendingRef.current.delete(id)
-  }, [])
-
-  const handleSplitDrag = useCallback((deltaX: number) => {
-    const container = document.getElementById('req-resp-container')
-    if (!container) return
-    const rect = container.getBoundingClientRect()
-    if (rect.width <= 0) return
-    const deltaPct = (deltaX / rect.width) * 100
-    setSplitPercent((prev) => Math.min(80, Math.max(20, prev + deltaPct)))
-  }, [])
-
-  const activeTab = tabs.find((t) => t.id === activeTabId) || tabs[0]
-  const isSending = sendingRef.current.has(activeTabId)
+  const beginResize = (event: React.PointerEvent<HTMLDivElement>): void => {
+    event.preventDefault();
+    const rect = layoutRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    const move = (moveEvent: PointerEvent): void => {
+      const percent = ((rect.right - moveEvent.clientX) / rect.width) * 100;
+      setResponseWidth(percent);
+    };
+    const up = (): void => {
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+      document.body.classList.remove('resizing-horizontal');
+    };
+    document.body.classList.add('resizing-horizontal');
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+  };
 
   return (
-    <Box sx={{ display: 'flex', height: '100%', overflow: 'hidden' }}>
-      <Sidebar workspaceId={workspaceId} />
-      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-        {/* Tab bar */}
-        <TabBar
-          tabs={tabs}
-          activeId={activeTabId}
-          onSelect={setActiveTabId}
-          onClose={closeTab}
-          onAdd={addTab}
-          onRename={handleRename}
-        />
-
-        {/* Request/Response split area */}
-        <Box sx={{ flex: 1, minHeight: 0, p: 1, display: 'flex', flexDirection: 'column' }}>
-          {/* URL bar */}
-          <Paper elevation={1} sx={{ p: 1, mb: 1, flex: 'none' }}>
-            <AddressBar
-              request={activeTab}
-              onChange={handleRequestChange}
-              onSend={handleSend}
-              isLoading={isSending}
-              onCancel={() => handleCancel(activeTabId)}
-            />
-          </Paper>
-
-          {/* Left-right split */}
-          <Box
-            id="req-resp-container"
-            sx={{ display: 'flex', flex: 1, gap: 1, minHeight: 0, minWidth: 0 }}
-          >
-            {/* Left: Request editor */}
-            <Box sx={{ width: `${splitPercent}%`, display: 'flex', minWidth: 0 }}>
-              <Paper
-                sx={{
-                  p: 1,
-                  flex: 1,
-                  display: 'flex',
-                  minHeight: 0,
-                  minWidth: 0,
-                  overflow: 'auto'
-                }}
+    <div className="app-shell">
+      <TopBar />
+      <div className="workspace-body">
+        <Sidebar />
+        <main className="work-main">
+          <TabStrip />
+          <div className="work-stage">
+          <div className={`workspace-columns ${codeSidebarOpen && tab ? 'with-code' : ''}`}>
+          {tab ? (
+            <div className="work-editor">
+              <AddressBar tab={tab} />
+              <div
+                className="editor-layout left-right"
+                ref={layoutRef}
+                style={{ gridTemplateColumns: `minmax(340px, 1fr) 7px minmax(330px, ${responseWidth}%)` }}
               >
-                <RequestArea request={activeTab} onChange={handleRequestChange} />
-              </Paper>
-            </Box>
-
-            {/* Splitter */}
-            <Splitter onDrag={handleSplitDrag} />
-
-            {/* Right: Response viewer */}
-            <Box sx={{ width: `${100 - splitPercent}%`, display: 'flex', minWidth: 0 }}>
-              <Paper
-                sx={{
-                  p: 1,
-                  flex: 1,
-                  display: 'flex',
-                  minHeight: 0,
-                  minWidth: 0,
-                  overflow: 'auto'
-                }}
-              >
-                <ResponseArea response={activeTab.response} />
-              </Paper>
-            </Box>
-          </Box>
-        </Box>
-      </Box>
-      <ToolSideBar request={activeTab} />
-    </Box>
-  )
+                <div className="request-region"><RequestPanel tab={tab} /></div>
+                <div className="split-handle vertical" onPointerDown={beginResize} role="separator" aria-orientation="vertical">
+                  <span />
+                </div>
+                <div className="response-region"><ResponsePanel tab={tab} /></div>
+              </div>
+            </div>
+          ) : (
+            <WelcomeView />
+          )}
+          {tab && codeSidebarOpen && <CodeSidebar tab={tab} />}
+          </div>
+          </div>
+          <ConsoleDock />
+          <WorkspaceStatusBar />
+        </main>
+      </div>
+    </div>
+  );
 }
 
-export default function WorkspacePage(): React.JSX.Element {
+function WelcomeView(): React.JSX.Element {
+  const navigate = useNavigate();
+  const { t } = useI18n();
+  const requests = useCollectionStore((state) => state.requests);
+  const history = useHistoryStore((state) => state.items);
+  const createTab = useTabStore((state) => state.createTab);
+  const openRequest = useTabStore((state) => state.openRequest);
+  const openHistory = useTabStore((state) => state.openHistory);
+  const toast = useUiStore((state) => state.toast);
+
+  const importPostman = async (): Promise<void> => {
+    try {
+      const result = await unwrap(window.pigeon.transfer.importPostman());
+      if (!result) return;
+      await useCollectionStore.getState().load();
+      toast('success', t('Postman collection imported'));
+    } catch (error) {
+      toast('error', t('Import failed'), error instanceof Error ? error.message : String(error));
+    }
+  };
+
   return (
-    <RequestManagerProvider>
-      <WorkspaceInner />
-    </RequestManagerProvider>
-  )
+    <div className="welcome">
+      <div className="welcome-grid" />
+      <div className="welcome-main">
+        <div className="welcome-mark"><Logo size={44} /></div>
+        <span className="welcome-kicker">{t('LOCAL-FIRST API STUDIO')}</span>
+        <h1>{t('Make requests.')}<br /><em>{t('Keep the data.')}</em></h1>
+        <p className="welcome-lead">
+          {t('A fast, private API workbench for HTTP, scripts and environments. No account required — everything is stored locally on this machine.')}
+        </p>
+        <div className="welcome-actions">
+          <button type="button" className="btn btn-primary" onClick={() => createTab()}>
+            <Zap size={15} /> {t('New request')}
+          </button>
+          <button type="button" className="btn btn-secondary" onClick={() => void importPostman()}>
+            <Upload size={15} /> {t('Import Postman')}
+          </button>
+          <button type="button" className="btn btn-ghost" onClick={() => navigate('/settings')}>
+            <Sparkles size={15} /> {t('Configure')}
+          </button>
+        </div>
+        <div className="welcome-shortcuts">
+          <span><Keyboard size={13} /> <kbd>⌘K</kbd> {t('quick find')}</span>
+          <span><kbd>⌘</kbd><kbd>↵</kbd> {t('send')}</span>
+          <span><kbd>⌘</kbd><kbd>T</kbd> {t('new tab')}</span>
+        </div>
+
+        {requests.length > 0 && (
+          <div className="welcome-recent">
+            <div className="welcome-section-head">
+              <h3>{t('Start from your workspace')}</h3>
+              <span>{t('{count} requests', { count: requests.length })}</span>
+            </div>
+            <div className="quick-list">
+              {requests.slice(0, 4).map((request) => (
+                <button type="button" key={request.id} className="quick-request" onClick={() => openRequest(request)}>
+                  <span className={`method-chip ${methodTone(request.method)}`}>{request.method}</span>
+                  <span className="quick-name">{request.name}</span>
+                  <span className="quick-url">{request.url}</span>
+                  <ArrowRight size={14} />
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {history.length > 0 && (
+          <div className="welcome-try">
+            <span>{t('Pick up where you left off')}</span>
+            <button type="button" onClick={() => openHistory(history[0])}>
+              {history[0].snapshot.name} <ArrowRight size={13} />
+            </button>
+          </div>
+        )}
+      </div>
+
+      <aside className="welcome-aside">
+        <div className="welcome-card">
+          <FolderTree size={18} />
+          <h4>{t('Collections that stay yours')}</h4>
+          <p>{t('Nested folders, scripts and request history in a single portable local file.')}</p>
+        </div>
+        <div className="welcome-card">
+          <Download size={18} />
+          <h4>{t('Postman compatible')}</h4>
+          <p>{t('Import Collection v2.1 and environments. Export any time. No lock-in.')}</p>
+        </div>
+        <div className="welcome-privacy">
+          <span className="privacy-dot" />
+          <div>
+            <strong>{t('Offline by default')}</strong>
+            <span>{t('No telemetry. No auto upload.')}</span>
+          </div>
+        </div>
+      </aside>
+    </div>
+  );
 }

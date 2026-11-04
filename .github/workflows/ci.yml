@@ -8,29 +8,43 @@ on:
 
 jobs:
   build:
-    name: Typecheck and Build
+    name: Validate and Build
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
           node-version: 24
-          cache: 'npm'
+          cache: pnpm
 
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: Validate translations
-        run: npm run i18n:validate
-
-      - name: Type check
-        run: npm run typecheck
+        run: pnpm i18n:validate
 
       - name: Lint
-        run: npm run lint
+        run: pnpm lint
+
+      - name: Type check
+        run: pnpm typecheck
+
+      - name: Test
+        run: pnpm test
 
       - name: Build
-        run: npm run build
+        run: pnpm build
+
+      - name: Package application (Linux)
+        run: pnpm exec electron-builder --dir --linux
+
+      - name: Verify packaged application
+        run: node scripts/verify-package.mjs release/linux-unpacked/resources/app.asar

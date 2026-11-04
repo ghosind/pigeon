@@ -1,218 +1,221 @@
-import React, { useRef, useState } from 'react'
-import {
-  Box,
-  IconButton,
-  Checkbox,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableRow,
-  InputBase,
-  FormControl,
-  Select,
-  MenuItem,
-  Button
-} from '@mui/material'
-import DeleteIcon from '@mui/icons-material/Delete'
-import { KeyValuePair, ItemType } from '@shared/types'
-import { useI18n } from '../../contexts/useI18n'
+import { useState } from 'react';
+import { FileUp, ListFilter, Plus, Trash2, X } from 'lucide-react';
+import type { ParamItem } from '@shared/types';
+import { asApiCallError } from '../../utils/api';
+import { useUiStore } from '../../stores/uiStore';
+import { useI18n } from '../../i18n';
 
-type KeyValueEditorProps = {
-  rows: KeyValuePair[]
-  onChange: (rows: KeyValuePair[]) => void
-  allowFile?: boolean
+interface KeyValueEditorProps {
+  rows: ParamItem[];
+  onChange: (rows: ParamItem[]) => void;
+  keyPlaceholder?: string;
+  valuePlaceholder?: string;
+  descriptionPlaceholder?: string;
+  allowFiles?: boolean;
+  enableBulkEdit?: boolean;
 }
 
-export default function KeyValueEditor({
+function blankRow(): ParamItem {
+  return { key: '', value: '', enabled: true, description: '' };
+}
+
+function rowsToBulk(rows: ParamItem[]): string {
+  return rows
+    .map((row) => `${row.enabled ? '' : '// '}${row.key}: ${row.value}${row.description ? ` # ${row.description}` : ''}`)
+    .join('\n');
+}
+
+function bulkToRows(text: string): ParamItem[] {
+  const rows: ParamItem[] = [];
+  for (const line of text.split('\n')) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+    const enabled = !trimmed.startsWith('//');
+    const content = enabled ? trimmed : trimmed.slice(2).trim();
+    const separator = content.indexOf(':');
+    if (separator < 0) {
+      rows.push({ key: content, value: '', enabled, description: '' });
+      continue;
+    }
+    const key = content.slice(0, separator).trim();
+    const rest = content.slice(separator + 1).trim();
+    const commentIndex = rest.indexOf(' # ');
+    rows.push({
+      key,
+      value: commentIndex >= 0 ? rest.slice(0, commentIndex).trim() : rest,
+      enabled,
+      description: commentIndex >= 0 ? rest.slice(commentIndex + 3).trim() : ''
+    });
+  }
+  return rows;
+}
+
+export function KeyValueEditor({
   rows,
   onChange,
-  allowFile
-}: KeyValueEditorProps): React.ReactElement {
-  const { t } = useI18n()
-  const dragIndex = useRef<number | null>(null)
-  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null)
+  keyPlaceholder = 'Key',
+  valuePlaceholder = 'Value',
+  descriptionPlaceholder = 'Description',
+  allowFiles = false,
+  enableBulkEdit = false
+}: KeyValueEditorProps): React.JSX.Element {
+  const { t } = useI18n();
+  const [bulk, setBulk] = useState(false);
+  const [bulkText, setBulkText] = useState('');
+  const effective = rows.length > 0 ? rows : [blankRow()];
 
-  const handleDragStart = (e: React.DragEvent, idx: number): void => {
-    dragIndex.current = idx
-    e.dataTransfer.effectAllowed = 'move'
+  const update = (index: number, patch: Partial<ParamItem>): void => {
+    const next = effective.map((row, rowIndex) => (rowIndex === index ? { ...row, ...patch } : row));
+    onChange(next);
+  };
+
+  const remove = (index: number): void => {
+    onChange(effective.filter((_row, rowIndex) => rowIndex !== index));
+  };
+
+  const add = (): void => {
+    onChange([...effective, blankRow()]);
+  };
+
+  const chooseFile = async (index: number): Promise<void> => {
     try {
-      e.dataTransfer.setData('text/plain', String(idx))
-    } catch (err) {
-      console.error('Drag start setData failed:', err)
-    }
-  }
-
-  const handleDragOver = (e: React.DragEvent, idx: number): void => {
-    e.preventDefault()
-    if (dragIndex.current === null) return
-    if (dragOverIndex !== idx) setDragOverIndex(idx)
-    e.dataTransfer.dropEffect = 'move'
-  }
-
-  const handleDrop = (e: React.DragEvent, idx: number): void => {
-    e.preventDefault()
-    const from = dragIndex.current
-    const to = idx
-    if (from === null || from === undefined) return
-
-    if (to === rows.length) {
-      const updated = [...rows]
-      const [moved] = updated.splice(from, 1)
-      updated.push(moved)
-      onChange(updated)
-    } else if (from !== to) {
-      const updated = [...rows]
-      const [moved] = updated.splice(from, 1)
-      const insertIndex = to > from ? to - 1 : to
-      updated.splice(insertIndex, 0, moved)
-      onChange(updated)
-    }
-
-    dragIndex.current = null
-    setDragOverIndex(null)
-  }
-
-  const handleDragEnd = (): void => {
-    dragIndex.current = null
-    setDragOverIndex(null)
-  }
-
-  const updateRow = (idx: number, patch: Partial<KeyValuePair>): void => {
-    const isPlaceholder = idx === rows.length
-
-    if (isPlaceholder) {
-      const newRow: KeyValuePair = {
-        key: patch.key ?? '',
-        value: patch.value ?? '',
-        enabled: patch.enabled ?? true
+      const path = await window.pigeon.settings.pickFile({ title: 'Choose a file to upload' });
+      if (path.ok && path.data) {
+        update(index, { type: 'file', filePath: path.data, value: path.data.split(/[\\/]/).pop() ?? path.data });
+      } else if (!path.ok) {
+        useUiStore.getState().toast('error', t('Unable to choose file'), path.error.message);
       }
-
-      if (newRow.key === '' && newRow.value === '' && patch.enabled === undefined) {
-        return
-      }
-
-      onChange([...rows, { ...newRow, type: patch.type ?? ItemType.Text }])
-    } else {
-      const merged = { ...rows[idx], ...patch }
-      // Remove row if it became empty
-      if (merged.key === '' && merged.value === '') {
-        onChange(rows.filter((_, i) => i !== idx))
-        return
-      }
-      onChange(rows.map((r, index) => (index === idx ? { ...r, ...patch } : r)))
+    } catch (error) {
+      useUiStore.getState().toast('error', t('Unable to choose file'), asApiCallError(error).message);
     }
-  }
-
-  const removeRow = (idx: number): void => {
-    onChange(rows.filter((_, index) => index !== idx))
-  }
-
-  const handleFileSelect = async (idx: number): Promise<void> => {
-    try {
-      const path: string | null = await window.api.openFileDialog()
-      if (!path) {
-        return
-      }
-      updateRow(idx, { value: path })
-    } catch (e) {
-      console.error('open file dialog failed', e)
-    }
-  }
+  };
 
   return (
-    <Box>
-      <Table size="small">
-        <TableHead>
-          <TableRow sx={{ height: 36 }}>
-            <TableCell sx={{ width: 20 }}></TableCell>
-            <TableCell>{t('kv.key')}</TableCell>
-            {allowFile && <TableCell sx={{ width: 60 }}>{t('kv.type')}</TableCell>}
-            <TableCell>{t('kv.value')}</TableCell>
-            <TableCell sx={{ width: 20 }}></TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {[...rows, { key: '', value: '', type: ItemType.Text, enabled: undefined }].map(
-            (row, index) => {
-              const isPlaceholder = index === rows.length
-              return (
-                <TableRow
-                  key={index}
-                  draggable={!isPlaceholder}
-                  onDragStart={(e) => (isPlaceholder ? undefined : handleDragStart(e, index))}
-                  onDragOver={(e) => handleDragOver(e, index)}
-                  onDrop={(e) => handleDrop(e, index)}
-                  onDragEnd={handleDragEnd}
-                  sx={{
-                    bgcolor: dragOverIndex === index ? 'action.selected' : undefined,
-                    cursor: isPlaceholder ? 'default' : 'grab'
-                  }}
-                >
-                  <TableCell sx={{ width: 20 }}>
-                    <Checkbox
-                      checked={row.enabled ?? true}
-                      onChange={(e) => updateRow(index, { enabled: e.target.checked })}
-                      sx={{ visibility: isPlaceholder ? 'hidden' : 'visible' }}
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <InputBase
-                      size="small"
-                      fullWidth
-                      placeholder={t('kv.key')}
-                      value={isPlaceholder ? '' : (row.key ?? '')}
-                      onChange={(e) => updateRow(index, { key: e.target.value })}
-                    />
-                  </TableCell>
-                  {allowFile && (
-                    <TableCell>
-                      <FormControl size="small" sx={{ width: 60 }}>
-                        <Select
-                          size="small"
-                          variant="standard"
-                          value={row.type ?? ItemType.Text}
-                          onChange={(e) => updateRow(index, { type: e.target.value as ItemType })}
-                        >
-                          <MenuItem value={ItemType.Text}>{t('kv.type.text')}</MenuItem>
-                          <MenuItem value={ItemType.File}>{t('kv.type.file')}</MenuItem>
-                        </Select>
-                      </FormControl>
-                    </TableCell>
-                  )}
-                  <TableCell>
-                    {row.type === 'file' ? (
-                      <Box sx={{ p: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Button size="small" onClick={() => handleFileSelect(index)}>
-                          {(row?.value && row.value.split('/').pop()) || t('kv.file.select')}
-                        </Button>
-                      </Box>
-                    ) : (
-                      <InputBase
-                        size="small"
-                        fullWidth
-                        placeholder={t('kv.value')}
-                        value={isPlaceholder ? '' : (row.value ?? '')}
-                        onChange={(e) => updateRow(index, { value: e.target.value })}
-                      />
+    <div className={`kv-editor ${allowFiles ? 'allow-files' : ''}`}>
+      <div className="kv-toolbar">
+        <span className="kv-hint">
+          {enableBulkEdit ? t('Toggle rows with the checkbox. Values may contain {{variables}}.') : t('File fields are streamed from disk when the request is sent.')}
+        </span>
+        {enableBulkEdit && (
+          <button
+            type="button"
+            className={`link-btn ${bulk ? 'active' : ''}`}
+            onClick={() => {
+              if (!bulk) setBulkText(rowsToBulk(effective));
+              setBulk((value) => !value);
+            }}
+          >
+            <ListFilter size={13} /> {t('Bulk edit')}
+          </button>
+        )}
+      </div>
+
+      {bulk ? (
+        <div className="bulk-edit">
+          <textarea
+            className="bulk-textarea"
+            value={bulkText}
+            onChange={(event) => setBulkText(event.target.value)}
+            spellCheck={false}
+            placeholder={'Content-Type: application/json\nAccept: application/json\n// Disabled-Header: value'}
+          />
+          <div className="bulk-actions">
+            <button type="button" className="btn btn-ghost btn-sm" onClick={() => setBulk(false)}>{t('Cancel')}</button>
+            <button
+              type="button"
+              className="btn btn-primary btn-sm"
+              onClick={() => {
+                onChange(bulkToRows(bulkText));
+                setBulk(false);
+              }}
+            >
+              {t('Apply')}
+            </button>
+          </div>
+        </div>
+      ) : (
+        <>
+          <div className="kv-head">
+            <span className="kv-check" />
+            <span>{keyPlaceholder}</span>
+            {allowFiles && <span>{t('Type')}</span>}
+            <span>{valuePlaceholder}</span>
+            <span>{descriptionPlaceholder}</span>
+            <span />
+          </div>
+          <div className="kv-body">
+            {effective.map((row, index) => (
+              <div className={`kv-row ${row.enabled ? '' : 'disabled'}`} key={index}>
+                <label className="checkbox">
+                  <input
+                    type="checkbox"
+                    checked={row.enabled}
+                    onChange={(event) => update(index, { enabled: event.target.checked })}
+                  />
+                  <span className="checkbox-mark" />
+                </label>
+                <input
+                  className="kv-input kv-key"
+                  value={row.key}
+                  placeholder={keyPlaceholder}
+                  onChange={(event) => update(index, { key: event.target.value })}
+                  spellCheck={false}
+                />
+                {allowFiles && (
+                  <select
+                    className="kv-select"
+                    value={row.type ?? 'text'}
+                    onChange={(event) => update(index, { type: event.target.value as 'text' | 'file' })}
+                  >
+                    <option value="text">{t('Text')}</option>
+                    <option value="file">{t('File')}</option>
+                  </select>
+                )}
+                {allowFiles && row.type === 'file' ? (
+                  <button type="button" className="file-value" onClick={() => void chooseFile(index)}>
+                    <FileUp size={13} />
+                    <span>{row.filePath ? row.filePath.split(/[\\/]/).pop() : t('Choose file…')}</span>
+                    {row.filePath && (
+                      <span
+                        className="file-clear"
+                        role="button"
+                        tabIndex={0}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          update(index, { filePath: '', value: '' });
+                        }}
+                        onKeyDown={(event) => event.key === 'Enter' && update(index, { filePath: '', value: '' })}
+                      >
+                        <X size={12} />
+                      </span>
                     )}
-                  </TableCell>
-                  <TableCell>
-                    <IconButton
-                      size="small"
-                      onClick={() => removeRow(index)}
-                      sx={{ visibility: isPlaceholder ? 'hidden' : 'visible' }}
-                    >
-                      <DeleteIcon fontSize="small" />
-                    </IconButton>
-                  </TableCell>
-                </TableRow>
-              )
-            }
-          )}
-        </TableBody>
-      </Table>
-      <Box sx={{ mt: 1 }} />
-    </Box>
-  )
+                  </button>
+                ) : (
+                  <input
+                    className="kv-input"
+                    value={row.value}
+                    placeholder={valuePlaceholder}
+                    onChange={(event) => update(index, { value: event.target.value })}
+                    spellCheck={false}
+                  />
+                )}
+                <input
+                  className="kv-input kv-description"
+                  value={row.description ?? ''}
+                  placeholder={descriptionPlaceholder}
+                  onChange={(event) => update(index, { description: event.target.value })}
+                />
+                <button type="button" className="kv-delete" onClick={() => remove(index)} aria-label={t('Remove row')}>
+                  <Trash2 size={13} />
+                </button>
+              </div>
+            ))}
+          </div>
+          <button type="button" className="kv-add" onClick={add}>
+            <Plus size={13} /> {t('Add row')}
+          </button>
+        </>
+      )}
+    </div>
+  );
 }

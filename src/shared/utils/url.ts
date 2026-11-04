@@ -1,123 +1,119 @@
-const ProtocolPattern = /^([a-zA-Z][a-zA-Z\d+\-.]*):\/\//
+/**
+ * URL <-> query-row helpers. Kept dependency-free so they can be unit tested.
+ */
+import type { ParamItem } from '../types';
 
-export class Url {
-  readonly raw: string
+const TEMPLATE_TOKEN = /(\{\{[^{}]+\}\})/g;
 
-  protocol = ''
-  username = ''
-  password = ''
-  host = ''
-  hostname = ''
-  port = ''
-  pathname = '/'
-  search = ''
-  hash = ''
+export interface ParsedUrl {
+  /** Everything before `?`, including the hash-free path. */
+  base: string;
+  params: ParamItem[];
+  hash: string;
+}
 
-  constructor(input?: string | null) {
-    this.raw = String(input ?? '').trim()
-    this.parse()
+function safeDecode(value: string): string {
+  try {
+    return decodeURIComponent(value.replace(/\+/g, ' '));
+  } catch {
+    return value;
   }
+}
 
-  private parse(): void {
-    if (!this.raw) return
+/** Encodes a query component but leaves `{{variable}}` placeholders intact. */
+export function encodeQueryComponent(value: string): string {
+  return value
+    .split(TEMPLATE_TOKEN)
+    .map((part) => (part.startsWith('{{') ? part : encodeURIComponent(part)))
+    .join('');
+}
 
-    let rest = this.raw
-
-    const hashIndex = rest.indexOf('#')
-    if (hashIndex >= 0) {
-      this.hash = rest.slice(hashIndex)
-      rest = rest.slice(0, hashIndex)
-    }
-
-    const searchIndex = rest.indexOf('?')
-    if (searchIndex >= 0) {
-      this.search = rest.slice(searchIndex)
-      rest = rest.slice(0, searchIndex)
-    }
-
-    const protoMatch = rest.match(ProtocolPattern)
-    if (protoMatch) {
-      this.protocol = `${protoMatch[1]}:`
-      rest = rest.slice(protoMatch[0].length)
-    }
-
-    if (!rest.startsWith('/')) {
-      const slashIndex = rest.indexOf('/')
-      const authority = slashIndex >= 0 ? rest.slice(0, slashIndex) : rest
-      rest = slashIndex >= 0 ? rest.slice(slashIndex) : ''
-
-      const atIndex = authority.lastIndexOf('@')
-      const hostPart = atIndex >= 0 ? authority.slice(atIndex + 1) : authority
-
-      if (atIndex >= 0) {
-        const auth = authority.slice(0, atIndex)
-        const [user, pass = ''] = auth.split(':')
-        this.username = user
-        this.password = pass
-      }
-
-      const portIndex = hostPart.lastIndexOf(':')
-      if (portIndex > 0) {
-        this.hostname = hostPart.slice(0, portIndex)
-        this.port = hostPart.slice(portIndex + 1)
-        this.host = hostPart
-      } else {
-        this.hostname = hostPart
-        this.host = hostPart
-      }
-    }
-
-    if (rest) {
-      this.pathname = rest.startsWith('/') ? rest : '/' + rest
-    }
+/** Parses the raw URL into base + editable query rows, preserving order. */
+export function parseUrl(rawUrl: string): ParsedUrl {
+  let rest = rawUrl.trim();
+  let hash = '';
+  const hashIndex = rest.indexOf('#');
+  if (hashIndex >= 0) {
+    hash = rest.slice(hashIndex);
+    rest = rest.slice(0, hashIndex);
   }
-
-  get isAbsolute(): boolean {
-    return Boolean(this.protocol)
+  const queryIndex = rest.indexOf('?');
+  if (queryIndex < 0) {
+    return { base: rest, params: [], hash };
   }
-
-  get origin(): string {
-    if (!this.protocol || !this.host) return ''
-    return `${this.protocol}//${this.host}`
+  const base = rest.slice(0, queryIndex);
+  const query = rest.slice(queryIndex + 1);
+  const params: ParamItem[] = [];
+  for (const segment of query.split('&')) {
+    if (!segment) continue;
+    const equalsIndex = segment.indexOf('=');
+    const rawKey = equalsIndex >= 0 ? segment.slice(0, equalsIndex) : segment;
+    const rawValue = equalsIndex >= 0 ? segment.slice(equalsIndex + 1) : '';
+    params.push({
+      key: safeDecode(rawKey),
+      value: safeDecode(rawValue),
+      enabled: true,
+      description: ''
+    });
   }
+  return { base, params, hash };
+}
 
-  get href(): string {
-    let out = ''
+/** Rebuilds the URL from the base + enabled query rows. */
+export function buildUrl(rawUrl: string, params: ParamItem[]): string {
+  const parsed = parseUrl(rawUrl);
+  const pairs = params
+    .filter((param) => param.enabled && param.key.trim().length > 0)
+    .map((param) => `${encodeQueryComponent(param.key)}=${encodeQueryComponent(param.value)}`);
+  const query = pairs.length > 0 ? `?${pairs.join('&')}` : '';
+  return `${parsed.base}${query}${parsed.hash}`;
+}
 
-    if (this.protocol) {
-      out += `${this.protocol}//`
-    }
+/** Parses a typed URL and returns the query rows that should populate the form. */
+export function queryRowsFromUrl(rawUrl: string): ParamItem[] {
+  return parseUrl(rawUrl).params;
+}
 
-    if (this.username) {
-      out += this.username
-      if (this.password) out += `:${this.password}`
-      out += '@'
-    }
-
-    if (this.host) {
-      out += this.host
-    }
-
-    out += this.pathname || '/'
-
-    if (this.search) {
-      if (!this.search.startsWith('?')) out += '?'
-      out += this.search
-    }
-    if (this.hash) out += this.hash
-
-    return out
+/** Ensures a scheme is present; defaults to http for local/intranet hosts. */
+export function normalizeUrl(rawUrl: string): string {
+  const trimmed = rawUrl.trim();
+  if (!trimmed) return '';
+  if (/^[a-zA-Z][a-zA-Z\d+\-.]*:\/\//.test(trimmed)) return trimmed;
+  if (/^(localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1\])(?::|\/|$)/i.test(trimmed)) {
+    return `http://${trimmed}`;
   }
+  return `https://${trimmed}`;
+}
 
-  get searchParams(): URLSearchParams {
-    return new URLSearchParams(this.search.startsWith('?') ? this.search.slice(1) : '')
+export function stripHash(url: string): string {
+  const index = url.indexOf('#');
+  return index >= 0 ? url.slice(0, index) : url;
+}
+
+export function addQueryParam(rawUrl: string, key: string, value: string): string {
+  const parsed = parseUrl(rawUrl);
+  return buildUrl(rawUrl, [
+    ...parsed.params,
+    { key, value, enabled: true, description: '' }
+  ]);
+}
+
+export function getOrigin(rawUrl: string): string {
+  try {
+    return new URL(rawUrl).origin;
+  } catch {
+    return '';
   }
+}
 
-  toString(): string {
-    return this.href
-  }
-
-  toJSON(): string {
-    return this.href
+/** Turns a URL into a compact label, leaving room for the host. */
+export function shortenUrl(rawUrl: string, maxLength = 72): string {
+  if (rawUrl.length <= maxLength) return rawUrl;
+  try {
+    const parsed = new URL(rawUrl);
+    const pathLabel = `${parsed.pathname}${parsed.search}`;
+    return `${parsed.host}${pathLabel.length > maxLength - parsed.host.length ? '…' : pathLabel}`;
+  } catch {
+    return `${rawUrl.slice(0, maxLength)}…`;
   }
 }

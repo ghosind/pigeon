@@ -1,56 +1,70 @@
-import React, { useEffect } from 'react'
-import { HashRouter, Routes, Route, Navigate } from 'react-router-dom'
-import CssBaseline from '@mui/material/CssBaseline'
-import AppThemeProvider from '@renderer/contexts/ThemeContext'
-import I18nProvider from '@renderer/contexts/I18nProvider'
-import DashboardPage from '@renderer/pages/DashboardPage'
-import WorkspacePage from '@renderer/pages/WorkspacePage'
-import {
-  useWorkspaceStore,
-  useAppSettingStore,
-  useEnvStore,
-  useHistoryStore
-} from '@renderer/stores'
-import Layout from './components/common/Layout'
+import { useEffect } from 'react';
+import { Route, Routes } from 'react-router-dom';
+import { WorkspacePage } from './pages/WorkspacePage';
+import { SettingsPage } from './pages/SettingsPage';
+import { EnvironmentsPage } from './pages/EnvironmentsPage';
+import { Toasts } from './components/common/Toasts';
+import { ContextMenu } from './components/common/ContextMenu';
+import { DialogHost } from './components/common/DialogHost';
+import { CommandPalette } from './components/common/CommandPalette';
+import { SaveRequestModal } from './components/common/SaveRequestModal';
+import { Logo } from './components/common/Logo';
+import { useSettingsStore, installThemeWatcher } from './stores/settingsStore';
+import { useCollectionStore } from './stores/collectionStore';
+import { useEnvStore } from './stores/envStore';
+import { useHistoryStore } from './stores/historyStore';
+import { useI18n } from './i18n';
+import { useWorkspaceStore } from './stores/workspaceStore';
 
-/**
- * Inner component that hydrates stores on mount.
- */
-function AppBootstrap({ children }: { children: React.ReactNode }): React.JSX.Element {
-  const hydrateConfig = useAppSettingStore((s) => s.hydrate)
-  const hydrateWorkspaces = useWorkspaceStore((s) => s.hydrate)
-  const hydrateEnvs = useEnvStore((s) => s.hydrate)
-  const hydrateHistory = useHistoryStore((s) => s.hydrate)
+export default function App(): React.JSX.Element {
+  const loaded = useSettingsStore((state) => state.loaded);
+  const loadSettings = useSettingsStore((state) => state.load);
+  const { t } = useI18n();
 
   useEffect(() => {
-    void hydrateConfig()
-    void hydrateWorkspaces()
-    void hydrateEnvs()
-    void hydrateHistory()
-  }, [hydrateConfig, hydrateWorkspaces, hydrateEnvs, hydrateHistory])
+    const dispose = installThemeWatcher();
+    return dispose;
+  }, []);
 
-  return <>{children}</>
-}
+  useEffect(() => {
+    const boot = async (): Promise<void> => {
+      await loadSettings();
+      await useWorkspaceStore.getState().load();
+      await Promise.all([
+        useCollectionStore.getState().load(),
+        useEnvStore.getState().load(),
+        useHistoryStore.getState().load(true)
+      ]);
+    };
+    void boot();
+  }, [loadSettings]);
 
-function App(): React.JSX.Element {
+  if (!loaded) {
+    return (
+      <div className="boot-screen">
+        <div className="boot-mark">
+          <Logo size={46} />
+        </div>
+        <div className="boot-word">Pigeon</div>
+        <div className="boot-line" />
+        <p className="boot-sub">{t('Local-first API studio')}</p>
+      </div>
+    );
+  }
+
   return (
-    <I18nProvider>
-      <AppThemeProvider>
-        <CssBaseline />
-        <HashRouter>
-          <AppBootstrap>
-            <Layout>
-              <Routes>
-                <Route path="/" element={<DashboardPage />} />
-                <Route path="/workspace/:id?" element={<WorkspacePage />} />
-                <Route path="*" element={<Navigate to="/" replace />} />
-              </Routes>
-            </Layout>
-          </AppBootstrap>
-        </HashRouter>
-      </AppThemeProvider>
-    </I18nProvider>
-  )
+    <>
+      <Routes>
+        <Route path="/" element={<WorkspacePage />} />
+        <Route path="/settings" element={<SettingsPage />} />
+        <Route path="/environments" element={<EnvironmentsPage />} />
+        <Route path="*" element={<WorkspacePage />} />
+      </Routes>
+      <Toasts />
+      <ContextMenu />
+      <DialogHost />
+      <CommandPalette />
+      <SaveRequestModal />
+    </>
+  );
 }
-
-export default App

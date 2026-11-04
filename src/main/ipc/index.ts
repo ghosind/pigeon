@@ -1,24 +1,17 @@
-/**
- * IPC handler registration — aggregates all domain-specific handlers.
- */
+import type { AppContext } from '../context';
+import type { TrustedCheck } from './registrar';
+import { IpcRegistrar } from './registrar';
+import { registerWorkspaceIpc } from './workspace';
+import { registerRequestIpc } from './request';
+import { registerSettingsIpc } from './settings';
+import { registerSystemIpc } from './system';
+import { registerTransferIpc } from './transfer';
 
-import { IpcMain } from 'electron'
-import { initSchema } from '../db/schema'
-import { initDatabase } from '../db/sqlite'
-import { registerRequestHandlers } from './handlers/http'
-import { registerDialogHandlers } from './handlers/dialog'
-import { registerDbHandlers } from './handlers/db'
-
-export function registerIpcHandlers(ipc: IpcMain): void {
-  // Initialize database and schema
-  initDatabase()
-  initSchema()
-
-  console.log('[IPC] Database initialized, registering handlers...')
-
-  registerRequestHandlers(ipc)
-  registerDialogHandlers(ipc)
-  registerDbHandlers(ipc)
-
-  console.log('[IPC] All handlers registered')
+export function registerIpc(context: AppContext, isTrusted: TrustedCheck): void {
+  const ipc = new IpcRegistrar(isTrusted);
+  registerSystemIpc(ipc, context);
+  registerWorkspaceIpc(ipc, context);
+  registerRequestIpc(ipc, context);
+  registerSettingsIpc(ipc, context);
+  registerTransferIpc(ipc, context);
 }

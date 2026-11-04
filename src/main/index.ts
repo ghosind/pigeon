@@ -1,74 +1,82 @@
-import { app, shell, BrowserWindow, ipcMain } from 'electron'
-import { join } from 'path'
-import { electronApp, optimizer, is } from '@electron-toolkit/utils'
-import icon from '../../resources/icon.png?asset'
-import { registerIpcHandlers } from './ipc'
+/** Electron main entry: lifecycle, security defaults and service composition. */
+import { app, BrowserWindow, dialog, session } from 'electron';
+import { initializeDataDirectory } from './services/data-dir';
+import { initializeLogger, createLogger, flushLogs } from './utils/logger';
+import { AppContext } from './context';
+import { createMainWindow, installApplicationMenu, loadMainWindow } from './window';
+import { registerIpc } from './ipc';
 
-function createWindow(): void {
-  // Create the browser window.
-  const mainWindow = new BrowserWindow({
-    width: 900,
-    height: 670,
-    show: false,
-    autoHideMenuBar: true,
-    ...(process.platform === 'linux' ? { icon } : {}),
-    webPreferences: {
-      preload: join(__dirname, '../preload/index.js'),
-      sandbox: false
+app.setName('Pigeon');
+app.setAppUserModelId('com.ghosind.pigeon');
+
+const logger = createLogger('main');
+let context: AppContext | null = null;
+let mainWindow: BrowserWindow | null = null;
+
+if (!app.requestSingleInstanceLock()) {
+  app.quit();
+} else {
+  app.on('second-instance', () => {
+    if (mainWindow) {
+      if (mainWindow.isMinimized()) mainWindow.restore();
+      mainWindow.focus();
     }
-  })
+  });
 
-  mainWindow.on('ready-to-show', () => {
-    mainWindow.show()
-  })
+  app.whenReady().then(async () => {
+    installApplicationMenu(!app.isPackaged);
+    session.defaultSession.setPermissionRequestHandler((_webContents, _permission, callback) => callback(false));
+    try {
+      const state = await initializeDataDirectory();
+      await initializeLogger(state.dir);
+      logger.info('Pigeon starting', {
+        version: app.getVersion(),
+        electron: process.versions.electron,
+        platform: process.platform
+      });
+      context = new AppContext(state.dir);
+      mainWindow = createMainWindow();
+      registerIpc(context, (event) => Boolean(mainWindow && event.sender === mainWindow.webContents));
+      mainWindow.on('closed', () => {
+        mainWindow = null;
+      });
+      await loadMainWindow(mainWindow);
+    } catch (error) {
+      logger.error('Startup failed', { error: String(error) });
+      await dialog.showMessageBox({
+        type: 'error',
+        title: 'Pigeon could not start',
+        message: 'The application failed to initialize.',
+        detail: error instanceof Error ? error.message : String(error)
+      });
+      app.quit();
+    }
 
-  mainWindow.webContents.setWindowOpenHandler((details) => {
-    shell.openExternal(details.url)
-    return { action: 'deny' }
-  })
+    app.on('activate', () => {
+      if (BrowserWindow.getAllWindows().length === 0 && context) {
+        mainWindow = createMainWindow();
+        void loadMainWindow(mainWindow).catch((error) => logger.error('Unable to load window', { error: String(error) }));
+      }
+    });
+  });
 
-  // HMR for renderer base on electron-vite cli.
-  // Load the remote URL for development or the local html file for production.
-  if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
-    mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL'])
-  } else {
-    mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
-  }
+  app.on('window-all-closed', () => {
+    if (process.platform !== 'darwin') app.quit();
+  });
+
+  app.on('before-quit', () => {
+    void flushLogs();
+  });
+
+  app.on('will-quit', () => {
+    context?.close();
+    context = null;
+  });
+
+  process.on('uncaughtException', (error) => {
+    logger.error('Uncaught exception', { error: error.message, stack: error.stack });
+  });
+  process.on('unhandledRejection', (error) => {
+    logger.error('Unhandled rejection', { error: error instanceof Error ? error.message : String(error) });
+  });
 }
-
-// This method will be called when Electron has finished
-// initialization and is ready to create browser windows.
-// Some APIs can only be used after this event occurs.
-app.whenReady().then(() => {
-  // Set app user model id for windows
-  electronApp.setAppUserModelId('com.electron')
-
-  // Default open or close DevTools by F12 in development
-  // and ignore CommandOrControl + R in production.
-  // see https://github.com/alex8088/electron-toolkit/tree/master/packages/utils
-  app.on('browser-window-created', (_, window) => {
-    optimizer.watchWindowShortcuts(window)
-  })
-
-  registerIpcHandlers(ipcMain)
-
-  createWindow()
-
-  app.on('activate', function () {
-    // On macOS it's common to re-create a window in the app when the
-    // dock icon is clicked and there are no other windows open.
-    if (BrowserWindow.getAllWindows().length === 0) createWindow()
-  })
-})
-
-// Quit when all windows are closed, except on macOS. There, it's common
-// for applications and their menu bar to stay active until the user quits
-// explicitly with Cmd + Q.
-app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
-    app.quit()
-  }
-})
-
-// In this file you can include the rest of your app's specific main process
-// code. You can also put them in separate files and require them here.

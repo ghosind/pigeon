@@ -1,82 +1,101 @@
-# pigeon
+# Pigeon — API Studio
 
-`pigeon` is a cross-platform HTTP request management desktop application for Windows, macOS and Linux. It is built with Electron, Vite, React and TypeScript, and provides a lightweight interface for creating, editing, sending, and inspecting HTTP requests and responses.
+A local-first, multi-workspace API debugging client.
 
-## Key Features
+![Pigeon workspace](docs/screenshots/response.png)
 
-- Request creation and management: supports common HTTP methods (GET, POST, PUT, DELETE, etc.).
-- Customizable request headers and parameters: supports JSON body, and raw text.
-- Send requests and view responses: inspect status, headers, and response body.
-- Cross-platform packaging: uses `electron-builder` to produce native installers (dmg/pkg, exe, AppImage, etc.).
+## Core capabilities
 
-## Installation
+### Request engine (Electron main process)
+- `GET / POST / PUT / PATCH / DELETE / HEAD / OPTIONS / CONNECT`
+- URL/query synchronization, header presets and bulk editing
+- Raw, form-data (with files), URL-encoded and binary bodies
+- Variable resolution with local > environment > global precedence and dynamic variables
+- Timeouts, redirects with cross-origin auth stripping, cancellation, response size limits
+- Streaming collection of gzip / deflate / Brotli responses
+- System/custom HTTP/SOCKS proxies, custom CAs, PEM/PFX client certificates
+- Bounded response storage on disk with paged text previews and binary/image handling
 
-### Prerequisites
+### Workspace, collections, scripts, history
+- Multiple workspaces with isolated collection trees, environments and history
+- Collection → folder → request tree with drag-and-drop move and reorder
+- Inherited pre-request/test scripts and a sandboxed `pm` API subset
+- AES-256-GCM encryption for secret variables and client-certificate passphrases
+- Auto-recorded history with search, pagination, reopen, save-to-collection and delete
+- Postman Collection v2.1 and Environment import/export; HAR 1.2 import/export
+- Workspace-scoped backup and restore
 
-- Node.js 18 or later
-- npm (bundled with Node.js)
-- macOS: Xcode Command Line Tools (`xcode-select --install`) are recommended for local packaging and native dependency builds.
-- Windows: if building locally for Windows, ensure required build toolchains are installed (for example, Visual Studio Build Tools).
+### Desktop UX
+- Postman-style three-pane workspace, unlimited tabs, duplicate/close/close-others
+- Autosave for collection requests; unsaved draft protection on close
+- Command palette, configurable shortcuts, light/dark/system themes
+- Response Pretty/Raw/HTML preview, headers, sent headers, Console and Test Results
+- Global request Console dock with All/Errors filters
+- Independent right-side code snippet panel with syntax-highlighted Monaco output
+- Full-screen Settings and Environment manager pages
 
-### Clone and install dependencies
+## Screenshots
+
+| Workspace + left/right split | Global Console |
+| --- | --- |
+| ![Workspace](docs/screenshots/workspace.png) | ![Console](docs/screenshots/console.png) |
+
+| Code snippets | Settings |
+| --- | --- |
+| ![Code snippets](docs/screenshots/code.png) | ![Settings](docs/screenshots/settings.png) |
+
+| Environments | Dark theme |
+| --- | --- |
+| ![Environments](docs/screenshots/environments.png) | ![Dark theme](docs/screenshots/dark.png) |
+
+| Flattened Request Defaults | Lean About page |
+| --- | --- |
+| ![Request defaults](docs/screenshots/reqdefaults.png) | ![About Pigeon](docs/screenshots/about.png) |
+
+## Getting started
+
+Requirements: Node.js 22.12+ and pnpm 10+.
 
 ```bash
-git clone https://github.com/ghosind/pigeon.git
-cd pigeon
-npm ci
+pnpm install
+pnpm dev          # electron-vite dev
+pnpm typecheck    # TypeScript 7 main + renderer
+pnpm lint         # oxlint
+pnpm i18n:validate
+pnpm test         # 58 unit/integration tests
+pnpm build        # production bundles in out/
+pnpm dist:dir     # unpacked app in release/mac-arm64/Pigeon.app
+pnpm verify:package # assert the packaged app has its resources
+pnpm dist         # dmg / nsis / AppImage
+pnpm build:mac    # platform package (also build:win / build:linux)
+pnpm run ci       # i18n + lint + typecheck + tests + build
 ```
 
-Note: the repository includes a `postinstall` hook that runs `electron-builder install-app-deps` to prepare native dependencies after install.
+In restricted environments, set `electron_config_cache` to a writable folder before installing Electron.
 
-### Run in development mode
+### Local data
 
-```bash
-npm run dev
-```
+| Mode | Location |
+| --- | --- |
+| Default | `app.getPath('userData')` (e.g. `~/Library/Application Support/Pigeon`) |
+| Portable | `data/` next to the executable when a `portable` marker file exists |
+| Override | `PIGEON_DATA_DIR=/path` or `--data-dir=/path` |
 
-In development mode, the renderer uses Vite for hot reload while the main process runs with Electron for preview.
+Files: `pigeon.db`, `vault.key`, `logs/pigeon.log`, `tmp/responses/`. **Settings → Data** can move the data folder; Pigeon copies a consistent database snapshot and the vault key, then restarts.
 
-### Build (package) locally
+## Security notes
 
-```bash
-# General build (includes type checking)
-npm run build
+- Secret variables are encrypted before touching the local database. `vault.key` is separate, mode `0600`, and the AES key is derived with a machine-bound HKDF salt.
+- Scripts run in a null-prototype `node:vm` context with string code generation disabled and no host bindings. This is an application sandbox, not an OS sandbox.
+- TLS verification can be disabled only through an explicit setting with a persistent warning.
+- IPC payloads are Zod-validated and accepted only from the main window.
+- No telemetry or automatic uploads.
 
-# Platform packaging examples:
-npm run build:mac   # macOS
-npm run build:win   # Windows
-npm run build:linux # Linux
-```
+## Verification
 
-Build artifacts and installers are produced according to the `electron-builder` configuration and are typically placed under `dist` or `build` directories.
-
-## Usage Guide
-
-1. After launching the app you will typically see: a request editor, and a response viewer.
-2. Create a new request: choose method (GET/POST/...), enter the URL, configure headers and parameters, and select a body type (JSON, Form, Raw).
-3. Send the request: click the `Send` button and inspect the response panel.
-	- The response view shows status, timings, response headers, and response body.
-
-Typical layout (conceptual):
-
-- Top: request address bar and send button
-- Left: request editor (Headers / Body)
-- Right/bottom: response viewer (Status / Headers / Body)
-
-## Contributing
-
-Contributions are welcome. Suggested workflow:
-
-1. Fork the repo and create a feature branch: `git checkout -b feat/your-feature`.
-2. Follow the code style: the project uses ESLint and Prettier. Run `npm run lint` and `npm run format` before committing if configured.
-3. Commit messages: use clear messages; branch naming examples: `feat/`, `fix/`, `chore/`.
-4. Open a Pull Request with a description of your changes and any test steps.
-5. CI runs type checks and build on push and PR — ensure CI passes before requesting review.
-
-Maintainers will review PRs and may request changes, tests, or documentation updates as needed.
-
-## License
-
-This project is licensed under the Apache License 2.0. See the `LICENSE` file in the repository root for full terms.
-
-Briefly: Apache 2.0 permits use, reproduction, modification, and distribution under the license terms and includes a patent grant. Refer to `LICENSE` for details.
+- `pnpm typecheck` — main and renderer pass with TypeScript 7.
+- `pnpm lint` — oxlint with zero warnings.
+- `pnpm i18n:validate` — `en` and `zh-CN` catalogs are complete and in sync.
+- `pnpm test` — **58 tests** across URL/variable resolution, i18n, code generation, script sandbox, crypto, HTTP client, database/workspace isolation, request-engine integration, Postman/HAR parsing and workspace backup restore.
+- `pnpm build` and `electron-builder --dir --mac` produce the packaged app.
+- UI smoke-tested from the production bundle in headless Chromium; light, dark and Chinese locale verified.

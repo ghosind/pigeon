@@ -1,21 +1,22 @@
 appId: com.ghosind.pigeon
 productName: Pigeon
 directories:
+  output: release
   buildResources: build
 publish:
   provider: github
   releaseType: release
 files:
-  - '**/*'
-  - '!**/.vscode/*'
-  - '!electron.vite.config.{js,ts,mjs,cjs}'
-  - '!{.eslintcache,eslint.config.mjs,.prettierignore,.prettierrc.yaml,dev-app-update.yml,CHANGELOG.md,README.md}'
-  - '!{.env,.env.*,.npmrc,pnpm-lock.yaml}'
-  - '!{tsconfig.json,tsconfig.node.json,tsconfig.web.json}'
+  - 'out/**/*'
+  - '!**/.DS_Store'
+  - 'resources/**/*'
+  - 'package.json'
+  - 'LICENSE'
 asarUnpack:
   - resources/**
 win:
   executableName: Pigeon
+  icon: build/icon.ico
 nsis:
   artifactName: ${name}-${version}-setup.${ext}
   shortcutName: ${productName}
@@ -42,6 +43,7 @@ linux:
   target:
     - AppImage
     - deb
+  icon: build/icon.png
   maintainer: Chen Su
   category: Utility
 appImage:

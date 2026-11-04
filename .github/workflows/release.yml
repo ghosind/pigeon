@@ -12,7 +12,6 @@ jobs:
   release:
     name: Build (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
-
     strategy:
       fail-fast: false
       matrix:
@@ -22,41 +21,37 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
 
-      - name: Setup Node
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
           node-version: 24
-          cache: npm
+          cache: pnpm
 
       - name: Install Linux system dependencies
         if: matrix.os == 'ubuntu-latest'
         run: |
           sudo apt-get update
-          sudo apt-get install -y \
-            libgtk-3-0 \
-            libnotify4 \
-            libnss3 \
-            libxss1 \
-            libasound2-plugins \
-            libc6-dev \
-            libstdc++6 \
-            wget
+          sudo apt-get install -y libgtk-3-0 libnotify4 libnss3 libxss1 libasound2t64 libc6-dev libstdc++6 wget
 
-      - name: Install Node dependencies
-        run: npm ci --unsafe-perm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
-      - name: Build app
-        run: npm run build
+      - name: Validate
+        run: pnpm run ci
 
-      - name: Fix app-builder permissions (Linux only)
-        if: matrix.os == 'ubuntu-latest'
-        run: chmod +x node_modules/app-builder-bin/linux/x64/app-builder
+      - name: Package application
+        run: pnpm exec electron-builder --dir
 
-      - name: Build and Publish
-        run: npm run dist
+      - name: Verify packaged application
+        run: node scripts/verify-package.mjs
+
+      - name: Publish release
+        run: pnpm exec electron-builder --publish always
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          ELECTRON_MIRROR: ""
-          CSC_NAME: ""
-          CSC_LINK: ""
-          CSC_KEY_PASSWORD: ""
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"

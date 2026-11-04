@@ -1,90 +1,75 @@
-/**
- * historyStore — manages request history records.
- */
+import { create } from 'zustand';
+import type { HistoryRecord } from '@shared/types';
+import { asApiCallError, unwrap } from '../utils/api';
+import { useUiStore } from './uiStore';
+import { t } from '../i18n';
 
-import { create } from 'zustand'
-import type { RequestHistoryRecord } from '@shared/types'
-
-export interface HistoryGroup {
-  label: string
-  records: RequestHistoryRecord[]
+interface HistoryState {
+  items: HistoryRecord[];
+  total: number;
+  loading: boolean;
+  search: string;
+  setSearch: (search: string) => void;
+  load: (reset?: boolean) => Promise<void>;
+  loadMore: () => Promise<void>;
+  remove: (id: string) => Promise<void>;
+  clear: () => Promise<void>;
 }
 
-export interface HistoryState {
-  records: RequestHistoryRecord[]
-  loading: boolean
-  hydrate: (workspaceId?: string) => Promise<void>
-  addRecord: (record: RequestHistoryRecord) => void
-  removeRecord: (id: string) => Promise<void>
-  clearAll: () => Promise<void>
-  getGroupedHistory: () => HistoryGroup[]
-}
+const PAGE_SIZE = 40;
 
-function groupByDate(records: RequestHistoryRecord[]): HistoryGroup[] {
-  const now = new Date()
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-  const yesterday = new Date(today.getTime() - 86400000)
-
-  const groups: Record<string, RequestHistoryRecord[]> = {
-    today: [],
-    yesterday: [],
-    older: []
-  }
-
-  for (const r of records) {
-    const d = new Date(r.createTime)
-    if (d >= today) {
-      groups.today.push(r)
-    } else if (d >= yesterday) {
-      groups.yesterday.push(r)
-    } else {
-      groups.older.push(r)
-    }
-  }
-
-  const result: HistoryGroup[] = []
-  if (groups.today.length) result.push({ label: 'history.group.today', records: groups.today })
-  if (groups.yesterday.length)
-    result.push({ label: 'history.group.yesterday', records: groups.yesterday })
-  if (groups.older.length) result.push({ label: 'history.group.older', records: groups.older })
-  return result
+function notifyError(title: string, error: unknown): void {
+  useUiStore.getState().toast('error', title, asApiCallError(error).message);
 }
 
 export const useHistoryStore = create<HistoryState>((set, get) => ({
-  records: [],
+  items: [],
+  total: 0,
   loading: false,
-
-  hydrate: async (workspaceId?: string) => {
-    set({ loading: true })
+  search: '',
+  setSearch: (search) => {
+    set({ search });
+    void get().load(true);
+  },
+  load: async (reset = true) => {
+    set({ loading: true });
     try {
-      const res = await window.api?.listHistory(undefined, undefined, workspaceId)
-      if (res?.ok && res.data) {
-        set({ records: res.data, loading: false })
-      }
-    } catch {
-      set({ loading: false })
+      const page = await unwrap(
+        window.pigeon.history.list({
+          search: get().search || undefined,
+          limit: PAGE_SIZE,
+          offset: reset ? 0 : get().items.length
+        })
+      );
+      set((state) => ({
+        items: reset ? page.items : [...state.items, ...page.items],
+        total: page.total,
+        loading: false
+      }));
+    } catch (error) {
+      set({ loading: false });
+      notifyError(t('Unable to load history'), error);
     }
   },
-
-  addRecord: (record) => set((s) => ({ records: [record, ...s.records] })),
-
-  removeRecord: async (id) => {
+  loadMore: async () => {
+    if (get().items.length >= get().total || get().loading) return;
+    await get().load(false);
+  },
+  remove: async (id) => {
     try {
-      await window.api?.deleteHistory(id)
-      set((s) => ({ records: s.records.filter((r) => r.id !== id) }))
-    } catch {
-      // silently handled
+      await unwrap(window.pigeon.history.remove(id));
+      set((state) => ({ items: state.items.filter((item) => item.id !== id), total: Math.max(0, state.total - 1) }));
+    } catch (error) {
+      notifyError(t('Unable to delete history entry'), error);
     }
   },
-
-  clearAll: async () => {
+  clear: async () => {
     try {
-      await window.api?.clearHistory()
-      set({ records: [] })
-    } catch {
-      // silently handled
+      await unwrap(window.pigeon.history.clear());
+      set({ items: [], total: 0 });
+      useUiStore.getState().toast('success', t('History cleared'));
+    } catch (error) {
+      notifyError(t('Unable to clear history'), error);
     }
-  },
-
-  getGroupedHistory: () => groupByDate(get().records)
-}))
+  }
+}));
