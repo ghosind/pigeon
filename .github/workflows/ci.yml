@@ -44,7 +44,7 @@ jobs:
         run: pnpm build
 
       - name: Package application (Linux)
-        run: pnpm exec electron-builder --dir --linux
+        run: pnpm exec electron-builder --dir --linux --publish never
 
       - name: Verify packaged application
-        run: node scripts/verify-package.mjs release/linux-unpacked/resources/app.asar
+        run: node scripts/verify-package.mjs

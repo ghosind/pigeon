@@ -45,7 +45,7 @@ jobs:
         run: pnpm run ci
 
       - name: Package application
-        run: pnpm exec electron-builder --dir
+        run: pnpm exec electron-builder --dir --publish never
 
       - name: Verify packaged application
         run: node scripts/verify-package.mjs
