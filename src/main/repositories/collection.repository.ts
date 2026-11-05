@@ -1,11 +1,12 @@
 import { randomUUID } from 'node:crypto';
 import type { CollectionCreateInput, CollectionUpdateInput } from '@shared/ipc';
-import type { CollectionNode, CollectionSnapshot, SavedRequest } from '@shared/types';
+import type { CollectionNode, CollectionSnapshot, SavedRequest, VariableEntry } from '@shared/types';
 import type { PigeonDatabase } from '../services/database';
 import { AppError } from '../utils/errors';
 import { createLogger } from '../utils/logger';
 import { nextSiblingOrder } from './ordering';
 import { mapRequestRow, type SavedRequestRow } from './request.mapper';
+import { parseScopedVariables, scopedVariablesToRecord } from './scoped-variables';
 
 const logger = createLogger('collections');
 
@@ -18,6 +19,7 @@ interface CollectionRow {
   type: 'collection' | 'folder';
   pre_request_script: string;
   test_script: string;
+  variables: string;
   sort_order: number;
   cloud_id: string | null;
   sync_version: number | null;
@@ -35,6 +37,7 @@ export function mapCollectionRow(row: CollectionRow): CollectionNode {
     type: row.type,
     preRequestScript: row.pre_request_script,
     testScript: row.test_script,
+    variables: parseScopedVariables(row.variables),
     order: row.sort_order,
     cloudId: row.cloud_id ?? undefined,
     syncVersion: row.sync_version ?? undefined,
@@ -107,6 +110,7 @@ export class CollectionRepository {
           description = COALESCE(?, description),
           pre_request_script = COALESCE(?, pre_request_script),
           test_script = COALESCE(?, test_script),
+          variables = COALESCE(?, variables),
           is_dirty = 1,
           updated_at = ?
          WHERE id = ? AND workspace_id = ?`
@@ -116,11 +120,33 @@ export class CollectionRepository {
         patch.description ?? null,
         patch.preRequestScript ?? null,
         patch.testScript ?? null,
+        patch.variables ? JSON.stringify(patch.variables) : null,
         now,
         input.id,
         this.workspaceId()
       );
     return this.get(input.id)!;
+  }
+
+  /** Returns the folder/collection variables nearest to the given node first. */
+  variablesFor(id: string): VariableEntry[] {
+    return this.get(id)?.variables ?? [];
+  }
+
+  /** Folder chain variables (outermost first, nearest folder wins). */
+  variableScope(collectionId?: string): Record<string, string> {
+    if (!collectionId) return {};
+    const chain: CollectionNode[] = [];
+    let current = this.get(collectionId);
+    const seen = new Set<string>();
+    while (current && !seen.has(current.id)) {
+      seen.add(current.id);
+      chain.unshift(current);
+      current = current.parentId ? this.get(current.parentId) : undefined;
+    }
+    const scope: Record<string, string> = {};
+    for (const node of chain) Object.assign(scope, scopedVariablesToRecord(node.variables));
+    return scope;
   }
 
   delete(id: string): void {

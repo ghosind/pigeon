@@ -15,10 +15,6 @@ export function ParamsTab({
   const rows = tab.draft.queryParams;
   return (
     <div className="tab-pane params-pane">
-      <div className="pane-note">
-        <span>{t('Query parameters stay in sync with the URL.')}</span>
-        <span className="pane-note-count">{t('{count} enabled', { count: rows.filter((row) => row.enabled && row.key).length })}</span>
-      </div>
       <KeyValueEditor
         rows={rows}
         enableBulkEdit

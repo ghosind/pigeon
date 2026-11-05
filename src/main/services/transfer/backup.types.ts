@@ -15,6 +15,7 @@ export interface BackupCollectionRow {
   type: 'collection' | 'folder';
   pre_request_script: string;
   test_script: string;
+  variables?: string;
   sort_order: number;
   cloud_id: string | null;
   sync_version: number | null;

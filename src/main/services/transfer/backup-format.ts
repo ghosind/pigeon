@@ -106,6 +106,7 @@ function toCollection(row: Row): BackupCollectionRow | null {
     type,
     pre_request_script: text(row.pre_request_script),
     test_script: text(row.test_script),
+    variables: jsonText(row.variables, '[]'),
     sort_order: number(row.sort_order, 0),
     cloud_id: nullableText(row.cloud_id),
     sync_version: nullableNumber(row.sync_version),

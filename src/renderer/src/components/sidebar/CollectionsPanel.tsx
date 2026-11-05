@@ -74,6 +74,7 @@ export function CollectionsPanel(): React.JSX.Element {
   const moveItem = useCollectionStore((state) => state.moveItem);
   const reorder = useCollectionStore((state) => state.reorder);
   const openRequest = useTabStore((state) => state.openRequest);
+  const openFolderTab = useTabStore((state) => state.openFolderTab);
   const detachSource = useTabStore((state) => state.detachSource);
   const defaultBodyMode = useSettingsStore((state) => state.preference.defaultBodyMode);
   const toast = useUiStore((state) => state.toast);
@@ -308,7 +309,7 @@ export function CollectionsPanel(): React.JSX.Element {
           }}
           onClick={() => {
             setSelected(item.node.id);
-            toggleExpanded(item.node.id);
+            openFolderTab(item.node);
           }}
           onContextMenu={(event) => openMenu(event, menuForNode(item.node))}
         >

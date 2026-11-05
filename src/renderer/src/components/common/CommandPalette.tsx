@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, Clock3, FolderTree, Plus, Search, Settings2, SlidersHorizontal } from 'lucide-react';
 import { useUiStore } from '../../stores/uiStore';
+import { useEnvStore } from '../../stores/envStore';
 import { useCollectionStore } from '../../stores/collectionStore';
 import { useHistoryStore } from '../../stores/historyStore';
 import { useTabStore } from '../../stores/tabStore';
@@ -23,6 +24,7 @@ export function CommandPalette(): React.JSX.Element | null {
   const history = useHistoryStore((state) => state.items);
   const openRequest = useTabStore((state) => state.openRequest);
   const openHistory = useTabStore((state) => state.openHistory);
+  const openEnvironmentTab = useTabStore((state) => state.openEnvironmentTab);
   const createTab = useTabStore((state) => state.createTab);
   const navigate = useNavigate();
   const [query, setQuery] = useState('');
@@ -60,7 +62,7 @@ export function CommandPalette(): React.JSX.Element | null {
         label: t('Manage environments'),
         hint: t('Variables & secrets'),
         icon: <SlidersHorizontal size={16} />,
-        run: () => navigate('/environments')
+        run: () => openEnvironmentTab(useEnvStore.getState().environments.find((environment) => environment.isActive)?.id ?? null)
       }
     ];
     for (const action of actions) {

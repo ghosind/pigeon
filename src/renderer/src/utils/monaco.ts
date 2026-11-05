@@ -1,5 +1,6 @@
 import * as monaco from 'monaco-editor';
 import { loader } from '@monaco-editor/react';
+import type { VariableInfo } from './variableCatalog';
 import EditorWorker from '../../../../node_modules/monaco-editor/esm/vs/editor/editor.worker.js?worker';
 import JsonWorker from '../../../../node_modules/monaco-editor/esm/vs/language/json/json.worker.js?worker';
 import CssWorker from '../../../../node_modules/monaco-editor/esm/vs/language/css/css.worker.js?worker';
@@ -77,6 +78,44 @@ monaco.editor.defineTheme('pigeon-dark', {
 });
 
 
+
+let variableSupplier: () => VariableInfo[] = () => [];
+
+export function setVariableSupplier(supplier: () => VariableInfo[]): void {
+  variableSupplier = supplier;
+}
+
+const VARIABLE_LANGUAGES = ['javascript', 'typescript', 'json', 'plaintext', 'xml', 'html'];
+
+for (const language of VARIABLE_LANGUAGES) {
+  monaco.languages.registerCompletionItemProvider(language, {
+    triggerCharacters: ['{'],
+    provideCompletionItems(model, position) {
+      const line = model.getLineContent(position.lineNumber);
+      const prefix = line.slice(0, position.column - 1);
+      const match = /\{\{([^{}]*)$/.exec(prefix);
+      if (!match) return { suggestions: [] };
+      const startColumn = position.column - match[0].length;
+      const range = {
+        startLineNumber: position.lineNumber,
+        startColumn,
+        endLineNumber: position.lineNumber,
+        endColumn: position.column
+      };
+      const variables = variableSupplier();
+      return {
+        suggestions: variables.map((variable) => ({
+          label: `{{${variable.name}}}`,
+          kind: monaco.languages.CompletionItemKind.Variable,
+          insertText: `{{${variable.name}}}`,
+          detail: variable.scope,
+          documentation: variable.secret ? '••••••••' : variable.value,
+          range
+        }))
+      };
+    }
+  });
+}
 
 loader.config({ monaco });
 

@@ -13,7 +13,7 @@ export function ResponseTests({ response }: { response: ResponseResult }): React
       <EmptyState
         icon={<FlaskConical size={26} />}
         title={t('No tests ran')}
-        description={t('Add pm.test() assertions in the Tests script to verify this response.')}
+        description={t('Add pg.test() assertions in the Tests script to verify this response.')}
       />
     );
   }

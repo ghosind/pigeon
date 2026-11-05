@@ -1,14 +1,13 @@
 import { Check, Globe2, Layers, Plus, Settings2 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
 import { useEnvStore } from '../../stores/envStore';
 import { useUiStore } from '../../stores/uiStore';
+import { useTabStore } from '../../stores/tabStore';
 import { useI18n } from '../../i18n';
 
 export function EnvironmentsPanel(): React.JSX.Element {
   const environments = useEnvStore((state) => state.environments);
-  const activate = useEnvStore((state) => state.activate);
   const create = useEnvStore((state) => state.create);
-  const navigate = useNavigate();
+  const openEnvironmentTab = useTabStore((state) => state.openEnvironmentTab);
   const { t } = useI18n();
 
   return (
@@ -28,7 +27,8 @@ export function EnvironmentsPanel(): React.JSX.Element {
                 initialValue: t('New environment'),
                 confirmLabel: t('Create'),
                 onSubmit: async (name) => {
-                  await create(name);
+                  const environment = await create(name);
+                  openEnvironmentTab(environment.id);
                 }
               })
             }
@@ -43,7 +43,7 @@ export function EnvironmentsPanel(): React.JSX.Element {
             key={environment.id}
             type="button"
             className={`env-row ${environment.isActive ? 'active' : ''}`}
-            onClick={() => void activate(environment.id)}
+            onClick={() => openEnvironmentTab(environment.id)}
           >
             <Globe2 size={15} />
             <span>{environment.name}</span>
@@ -51,13 +51,13 @@ export function EnvironmentsPanel(): React.JSX.Element {
           </button>
         ))}
         {environments.length === 0 && <p className="panel-note">{t('No environments yet.')}</p>}
-        <button type="button" className="env-row globals-row" onClick={() => navigate('/environments')}>
+        <button type="button" className="env-row globals-row" onClick={() => openEnvironmentTab(null)}>
           <Layers size={15} />
           <span>{t('Global variables')}</span>
         </button>
       </div>
       <footer className="panel-foot">
-        <button type="button" onClick={() => navigate('/environments')}>
+        <button type="button" onClick={() => openEnvironmentTab(environments.find((environment) => environment.isActive)?.id ?? null)}>
           <Settings2 size={14} /> {t('Manage environments')}
         </button>
       </footer>

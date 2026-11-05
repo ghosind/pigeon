@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { ApiError, HistoryRecord, RequestDefinition, ResponseResult, SavedRequest } from '@shared/types';
+import type { ApiError, CollectionNode, HistoryRecord, RequestDefinition, ResponseResult, SavedRequest } from '@shared/types';
 import { createEmptyRequest } from '@shared/defaults';
 import { asApiCallError } from '../utils/api';
 import { useCollectionStore, requestToDefinition } from './collectionStore';
@@ -16,6 +16,9 @@ export type ResponseBodyView = 'pretty' | 'raw' | 'preview';
 
 export interface WorkspaceTab {
   id: string;
+  kind: 'request' | 'folder' | 'environment';
+  folderId?: string;
+  environmentId?: string | null;
   sourceRequestId?: string;
   collectionId?: string;
   fromHistory: boolean;
@@ -37,6 +40,8 @@ interface TabState {
   tabs: WorkspaceTab[];
   activeTabId: string | null;
   createTab: (partial?: Partial<RequestDefinition>) => WorkspaceTab;
+  openFolderTab: (folder: CollectionNode) => WorkspaceTab;
+  openEnvironmentTab: (environmentId: string | null) => WorkspaceTab;
   openRequest: (request: SavedRequest) => WorkspaceTab | undefined;
   openHistory: (record: HistoryRecord) => WorkspaceTab;
   activate: (id: string) => void;
@@ -86,6 +91,7 @@ function mergeDraft(partial?: Partial<RequestDefinition>): RequestDefinition {
 function makeTab(partial?: Partial<RequestDefinition>, extra: Partial<WorkspaceTab> = {}): WorkspaceTab {
   return {
     id: newId(),
+    kind: 'request',
     fromHistory: false,
     draft: mergeDraft(partial),
     dirty: false,
@@ -107,6 +113,30 @@ export const useTabStore = create<TabState>((set, get) => ({
   activeTabId: null,
   createTab: (partial) => {
     const tab = makeTab(partial);
+    set((state) => ({ tabs: [...state.tabs, tab], activeTabId: tab.id }));
+    return tab;
+  },
+  openFolderTab: (folder) => {
+    const existing = get().tabs.find((tab) => tab.kind === 'folder' && tab.folderId === folder.id);
+    if (existing) {
+      set({ activeTabId: existing.id });
+      return existing;
+    }
+    const tab = makeTab(undefined, { kind: 'folder', folderId: folder.id, draft: mergeDraft({ name: folder.name }) });
+    set((state) => ({ tabs: [...state.tabs, tab], activeTabId: tab.id }));
+    return tab;
+  },
+  openEnvironmentTab: (environmentId) => {
+    const existing = get().tabs.find((tab) => tab.kind === 'environment' && tab.environmentId === environmentId);
+    if (existing) {
+      set({ activeTabId: existing.id });
+      return existing;
+    }
+    const tab = makeTab(undefined, {
+      kind: 'environment',
+      environmentId,
+      draft: mergeDraft({ name: environmentId ? 'Environment' : 'Global variables' })
+    });
     set((state) => ({ tabs: [...state.tabs, tab], activeTabId: tab.id }));
     return tab;
   },

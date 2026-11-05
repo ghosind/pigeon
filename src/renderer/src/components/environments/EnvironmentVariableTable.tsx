@@ -10,6 +10,7 @@ interface Props {
   onChange: (index: number, patch: Partial<EnvironmentVariable>) => void;
   onDelete: (index: number) => void;
   onAdd: () => void;
+  allowSecrets?: boolean;
 }
 
 export function EnvironmentVariableTable({
@@ -18,16 +19,17 @@ export function EnvironmentVariableTable({
   onToggleReveal,
   onChange,
   onDelete,
-  onAdd
+  onAdd,
+  allowSecrets = true
 }: Props): React.JSX.Element {
   const { t } = useI18n();
   return (
-    <div className="env-table">
+    <div className={`env-table ${allowSecrets ? '' : 'no-secrets'}`}>
       <div className="env-table-head">
         <span>{t('On')}</span>
         <span>{t('Variable')}</span>
         <span>{t('Value')}</span>
-        <span>{t('Secret')}</span>
+        {allowSecrets && <span>{t('Secret')}</span>}
         <span />
       </div>
       {variables.length === 0 && (
@@ -42,7 +44,7 @@ export function EnvironmentVariableTable({
         const mask = variable.secret && variable.hasValue && !isRevealed;
         const showValue = !variable.secret || isRevealed || !variable.hasValue;
         return (
-          <div className={`env-row-edit ${variable.enabled ? '' : 'disabled'}`} key={`${variable.key}-${index}`}>
+          <div className={`env-row-edit ${variable.enabled ? '' : 'disabled'}`} key={index}>
             <div className="env-checkbox">
               <label className="checkbox">
                 <input
@@ -70,7 +72,7 @@ export function EnvironmentVariableTable({
                 spellCheck={false}
                 autoComplete="off"
               />
-              {variable.secret && (
+              {allowSecrets && variable.secret && (
                 <button
                   type="button"
                   className="reveal-btn"
@@ -81,13 +83,15 @@ export function EnvironmentVariableTable({
                 </button>
               )}
             </div>
-            <div className="env-secret-toggle">
-              <Switch
-                label={`Mark ${variable.key || 'variable'} secret`}
-                checked={variable.secret}
-                onChange={(secret) => onChange(index, { secret })}
-              />
-            </div>
+            {allowSecrets && (
+              <div className="env-secret-toggle">
+                <Switch
+                  label={`Mark ${variable.key || 'variable'} secret`}
+                  checked={variable.secret}
+                  onChange={(secret) => onChange(index, { secret })}
+                />
+              </div>
+            )}
             <button type="button" className="kv-delete" onClick={() => onDelete(index)} aria-label={t('Delete variable')}>
               <Trash2 size={14} />
             </button>

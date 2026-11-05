@@ -35,6 +35,7 @@
     "src/shared/**/*.ts",
     "tests/**/*.ts",
     "src/renderer/src/utils/codegen.ts",
+    "src/renderer/src/utils/variableCatalog.ts",
     "src/renderer/src/i18n/core.ts",
     "src/renderer/src/i18n/locales/*.json"
   ]

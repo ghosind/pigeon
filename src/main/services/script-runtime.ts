@@ -196,7 +196,7 @@ function __pigeonResponseTo() {
   };
 }
 
-var pm = {
+var pg = {
   info: {
     eventName: __INPUT__.eventName,
     requestName: __INPUT__.request.name,
@@ -262,12 +262,12 @@ var pm = {
     }
   },
   sendRequest: function () {
-    throw new Error('pm.sendRequest is not supported in this build');
+    throw new Error('pg.sendRequest is not supported in this build');
   }
 };
 
-pm.collectionVariables = pm.variables;
-pm.request = __pigeonState.request;
+pg.collectionVariables = pg.variables;
+pg.request = __pigeonState.request;
 
 var __urlObject = {
   raw: __pigeonState.request.url,
@@ -289,7 +289,7 @@ var __urlObject = {
     this.raw += (this.raw.indexOf('?') >= 0 ? '&' : '?') + pairs.join('&');
   }
 };
-pm.request.url = __urlObject;
+pg.request.url = __urlObject;
 
 var __requestHeaderList = __pigeonState.request.headers;
 var __headerApi = {
@@ -330,17 +330,17 @@ var __headerApi = {
     return result;
   }
 };
-pm.request.headers = __headerApi;
+pg.request.headers = __headerApi;
 
 var __bodyObject = {
   mode: __pigeonState.request.body ? __pigeonState.request.body.mode : 'none',
   raw: __pigeonState.request.body ? __pigeonState.request.body.raw : '',
   toString: function () { return this.raw || ''; }
 };
-pm.request.body = __bodyObject;
+pg.request.body = __bodyObject;
 
 if (__INPUT__.response) {
-  pm.response = {
+  pg.response = {
     code: __INPUT__.response.status,
     status: __INPUT__.response.statusText,
     responseTime: __INPUT__.response.duration,
@@ -361,6 +361,8 @@ if (__INPUT__.response) {
     get to() { return __pigeonResponseTo(); }
   };
 }
+
+var pm = pg;
 
 function __pigeonCollect() {
   var headers = [];

@@ -19,7 +19,7 @@ interface CollectionState {
   toggleExpanded: (id: string) => void;
   expand: (id: string) => void;
   createNode: (input: CollectionCreateInput) => Promise<CollectionNode>;
-  updateNode: (id: string, patch: Partial<Pick<CollectionNode, 'name' | 'description' | 'preRequestScript' | 'testScript'>>) => Promise<CollectionNode>;
+  updateNode: (id: string, patch: Partial<Pick<CollectionNode, 'name' | 'description' | 'preRequestScript' | 'testScript' | 'variables'>>) => Promise<CollectionNode>;
   removeNode: (id: string) => Promise<void>;
   createRequest: (input: RequestCreateInput) => Promise<SavedRequest>;
   updateRequest: (id: string, patch: Partial<RequestDefinition>, options?: { silent?: boolean }) => Promise<SavedRequest>;

@@ -8,6 +8,7 @@ export const TEMPLATE_PATTERN = /\{\{\s*([^{}]+?)\s*\}\}/g;
 export interface VariableScopes {
   local?: Record<string, string>;
   environment?: Record<string, string>;
+  folder?: Record<string, string>;
   globals?: Record<string, string>;
 }
 
@@ -35,7 +36,12 @@ function dynamicValue(name: string): string | undefined {
 }
 
 export function mergeScopes(scopes: VariableScopes): Record<string, string> {
-  return { ...(scopes.globals ?? {}), ...(scopes.environment ?? {}), ...(scopes.local ?? {}) };
+  return {
+    ...(scopes.globals ?? {}),
+    ...(scopes.folder ?? {}),
+    ...(scopes.environment ?? {}),
+    ...(scopes.local ?? {})
+  };
 }
 
 /**

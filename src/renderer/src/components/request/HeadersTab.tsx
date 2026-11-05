@@ -37,10 +37,6 @@ export function HeadersTab({
   return (
     <div className="tab-pane headers-pane">
       <div className="pane-toolbar">
-        <div className="pane-note">
-          <span>{t('Headers are sent exactly as written. Values may use variables.')}</span>
-          <span className="pane-note-count">{t('{count} enabled', { count: tab.draft.headers.filter((row) => row.enabled && row.key).length })}</span>
-        </div>
         <Menu
           width={200}
           trigger={

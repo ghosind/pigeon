@@ -97,7 +97,7 @@ export interface CollectionCreateInput {
 
 export interface CollectionUpdateInput {
   id: string;
-  patch: Partial<Pick<CollectionNode, 'name' | 'description' | 'preRequestScript' | 'testScript'>>;
+  patch: Partial<Pick<CollectionNode, 'name' | 'description' | 'preRequestScript' | 'testScript' | 'variables'>>;
 }
 
 export interface RequestCreateInput {

@@ -101,7 +101,7 @@ export function BodyTab({
             value={body.raw ?? ''}
             onChange={(raw) => setBody({ raw })}
             language={body.rawLanguage === 'xml' ? 'xml' : body.rawLanguage === 'text' ? 'plaintext' : 'json'}
-            height={286}
+            height="100%"
             path={`request-body-${tab.id}.${body.rawLanguage ?? 'json'}`}
           />
           <div className="body-status">

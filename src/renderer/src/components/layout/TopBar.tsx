@@ -1,16 +1,13 @@
 import { useNavigate } from 'react-router-dom';
 import {
-  ChevronDown,
   Download,
   FileJson,
   FolderUp,
   Globe2,
   Keyboard,
-  Plus,
   Search,
   Settings2,
-  Upload,
-  Check
+  Upload
 } from 'lucide-react';
 import { useEnvStore } from '../../stores/envStore';
 import { useTabStore } from '../../stores/tabStore';
@@ -21,17 +18,13 @@ import { useHistoryStore } from '../../stores/historyStore';
 import { asApiCallError, unwrap } from '../../utils/api';
 import { formatShortcut } from '../../utils/shortcuts';
 import { Logo } from '../common/Logo';
-import { Button, IconButton } from '../common/Button';
+import { IconButton } from '../common/Button';
 import { Menu, type MenuAction } from '../common/Menu';
 import { useI18n } from '../../i18n';
 import { WorkspaceSwitcher } from './WorkspaceSwitcher';
 
 export function TopBar(): React.JSX.Element {
   const navigate = useNavigate();
-  const environments = useEnvStore((state) => state.environments);
-  const activeEnv = environments.find((environment) => environment.isActive);
-  const activate = useEnvStore((state) => state.activate);
-  const createTab = useTabStore((state) => state.createTab);
   const setCommandOpen = useUiStore((state) => state.setCommandOpen);
   const toast = useUiStore((state) => state.toast);
   const loadSettings = useSettingsStore((state) => state.load);
@@ -108,18 +101,6 @@ export function TopBar(): React.JSX.Element {
     { label: t('Export Pigeon backup…'), icon: <Download size={15} />, onSelect: () => void runExport('backup') }
   ];
 
-  const envItems: MenuAction[] = environments.length
-    ? [
-        ...environments.map((environment) => ({
-          label: environment.name,
-          icon: environment.id === activeEnv?.id ? <Check size={15} /> : <Globe2 size={15} />,
-          onSelect: () => void activate(environment.id)
-        })),
-        { separator: true },
-        { label: t('Manage environments…'), icon: <Settings2 size={15} />, onSelect: () => navigate('/environments') }
-      ]
-    : [{ label: t('Create an environment…'), icon: <Plus size={15} />, onSelect: () => navigate('/environments') }];
-
   return (
     <header className="topbar">
       <button type="button" className="brand" onClick={() => navigate('/')} aria-label="Pigeon home">
@@ -137,18 +118,6 @@ export function TopBar(): React.JSX.Element {
       <div className="topbar-spacer" />
 
       <WorkspaceSwitcher />
-
-      <Menu
-        trigger={
-          <button type="button" className="env-pill" title={t('Active environment')}>
-            <Globe2 size={14} />
-            <span>{activeEnv?.name ?? t('No environment')}</span>
-            <ChevronDown size={13} />
-          </button>
-        }
-        items={envItems}
-        width={250}
-      />
 
       <Menu
         trigger={
@@ -178,9 +147,6 @@ export function TopBar(): React.JSX.Element {
         <Settings2 size={17} />
       </IconButton>
 
-      <Button variant="primary" size="sm" icon={<Plus size={15} />} onClick={() => createTab()} className="new-request-btn">
-        {t('New')}
-      </Button>
     </header>
   );
 }

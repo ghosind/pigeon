@@ -24,13 +24,13 @@ function input(overrides: Partial<ScriptExecutionInput>): ScriptExecutionInput {
 }
 
 describe('script sandbox', () => {
-  it('runs pm.test assertions and captures console output', () => {
+  it('runs pg.test assertions and captures console output', () => {
     const result = runner.run(
       input({
         code: [
-          'pm.test("status", () => pm.response.to.have.status(200));',
-          'pm.test("json", () => pm.expect(pm.response.json()).to.have.property("ok"));',
-          'console.log("token is", pm.environment.get("token"));'
+          'pg.test("status", () => pg.response.to.have.status(200));',
+          'pg.test("json", () => pg.expect(pg.response.json()).to.have.property("ok"));',
+          'console.log("token is", pg.environment.get("token"));'
         ].join('\n'),
         response: {
           status: 200,
@@ -50,7 +50,7 @@ describe('script sandbox', () => {
   it('captures failing assertions with messages', () => {
     const result = runner.run(
       input({
-        code: 'pm.test("fails", () => pm.expect(1).to.equal(2));',
+        code: 'pg.test("fails", () => pg.expect(1).to.equal(2));',
         response: { status: 500, statusText: 'ERR', headers: {}, bodyText: '', duration: 1, size: 0 }
       })
     );
@@ -63,10 +63,10 @@ describe('script sandbox', () => {
       input({
         eventName: 'prerequest',
         code: [
-          'pm.environment.set("baseUrl", "https://new.test");',
-          'pm.globals.set("region", "eu");',
-          'pm.variables.set("local", "1");',
-          'pm.request.headers.upsert({ key: "X-Debug", value: "yes" });'
+          'pg.environment.set("baseUrl", "https://new.test");',
+          'pg.globals.set("region", "eu");',
+          'pg.variables.set("local", "1");',
+          'pg.request.headers.upsert({ key: "X-Debug", value: "yes" });'
         ].join('\n')
       })
     );
@@ -74,6 +74,16 @@ describe('script sandbox', () => {
     expect(result.globalUpdates.region).toBe('eu');
     expect(result.localUpdates.local).toBe('1');
     expect(result.request?.headers).toContainEqual({ key: 'X-Debug', value: 'yes' });
+  });
+
+  it('keeps pm as a Postman-compatible alias for pg', () => {
+    const result = runner.run(
+      input({
+        code: 'pm.test("alias", () => pm.expect(pm.environment.get("token")).to.equal("abc"));'
+      })
+    );
+    expect(result.tests).toHaveLength(1);
+    expect(result.tests[0].passed).toBe(true);
   });
 
   it('does not expose Node globals or code generation', () => {
@@ -96,7 +106,7 @@ describe('script sandbox', () => {
   });
 
   it('reports syntax errors without crashing the process', () => {
-    const result = runner.run(input({ code: 'pm.test("x", () => {' }));
+    const result = runner.run(input({ code: 'pg.test("x", () => {' }));
     expect(result.error).toBeTruthy();
   });
 });

@@ -63,8 +63,8 @@ function definition(overrides: Partial<RequestDefinition> = {}): RequestDefiniti
     queryParams: [],
     headers: [{ key: 'X-Custom', value: 'yes', enabled: true }],
     body: { mode: 'raw', raw: '{"hello":"world"}', rawLanguage: 'json', formdata: [], urlencoded: [], binaryFilePath: '' },
-    preRequestScript: 'pm.environment.set("marker", "ran"); pm.request.headers.upsert({ key: "X-Pre", value: "1" });',
-    testScript: 'pm.test("status ok", () => pm.response.to.have.status(200)); pm.test("json", () => pm.expect(pm.response.json()).to.have.property("pre"));',
+    preRequestScript: 'pg.environment.set("marker", "ran"); pg.request.headers.upsert({ key: "X-Pre", value: "1" });',
+    testScript: 'pg.test("status ok", () => pg.response.to.have.status(200)); pg.test("json", () => pg.expect(pg.response.json()).to.have.property("pre"));',
     auth: { type: 'bearer', bearer: { token: '{{token}}' } },
     ...overrides
   };
@@ -108,10 +108,10 @@ function createEngine() {
   collections.update({
     id: collection.id,
     patch: {
-      preRequestScript: 'console.log("collection script"); pm.request.headers.upsert({ key: "X-Collection", value: "inherited" });'
+      preRequestScript: 'console.log("collection script"); pg.request.headers.upsert({ key: "X-Collection", value: "inherited" });'
     }
   });
-  return { db, workspaces, engine, history, environments, collection, bodyStore };
+  return { db, workspaces, collections, engine, history, environments, collection, bodyStore };
 }
 
 describe('request engine', () => {
@@ -136,6 +136,39 @@ describe('request engine', () => {
     ctx.db.close();
   });
 
+  it('resolves folder variables with environment and global precedence', async () => {
+    const ctx = createEngine();
+    ctx.environments.saveGlobals([{ key: 'shared', value: 'global', secret: false, enabled: true }]);
+    const folder = ctx.collections.create({ name: 'Scoped folder', parentId: ctx.collection.id, type: 'folder' });
+    ctx.collections.update({
+      id: folder.id,
+      patch: {
+        variables: [
+          { key: 'folderVar', value: 'folder', enabled: true },
+          { key: 'shared', value: 'folder', enabled: true }
+        ]
+      }
+    });
+    const active = ctx.environments.list().find((environment) => environment.isActive)!;
+    ctx.environments.update({
+      id: active.id,
+      variables: [...active.variables, { key: 'shared', value: 'environment', secret: false, enabled: true }]
+    });
+    const result = await ctx.engine.execute({
+      requestId: 'req-scope',
+      request: definition({
+        url: `${baseUrl}/{{folderVar}}/{{shared}}`,
+        preRequestScript: '',
+        testScript: ''
+      }),
+      collectionId: folder.id
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) throw new Error(result.error.message);
+    expect(result.data.bodyText).toContain('"url":"/folder/environment"');
+    ctx.db.close();
+  });
+
   it('returns a validation error for unresolved variables', async () => {
     const ctx = createEngine();
     const result = await ctx.engine.execute({
@@ -151,7 +184,7 @@ describe('request engine', () => {
     const ctx = createEngine();
     const result = await ctx.engine.execute({
       requestId: 'req-3',
-      request: definition({ url: 'http://127.0.0.1:1/nope', preRequestScript: '', testScript: 'pm.test("never", () => {});' })
+      request: definition({ url: 'http://127.0.0.1:1/nope', preRequestScript: '', testScript: 'pg.test("never", () => {});' })
     });
     expect(result.ok).toBe(false);
     ctx.db.close();

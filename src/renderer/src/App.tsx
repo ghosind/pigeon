@@ -2,7 +2,6 @@ import { useEffect } from 'react';
 import { Route, Routes } from 'react-router-dom';
 import { WorkspacePage } from './pages/WorkspacePage';
 import { SettingsPage } from './pages/SettingsPage';
-import { EnvironmentsPage } from './pages/EnvironmentsPage';
 import { Toasts } from './components/common/Toasts';
 import { ContextMenu } from './components/common/ContextMenu';
 import { DialogHost } from './components/common/DialogHost';
@@ -14,12 +13,25 @@ import { useCollectionStore } from './stores/collectionStore';
 import { useEnvStore } from './stores/envStore';
 import { useHistoryStore } from './stores/historyStore';
 import { useI18n } from './i18n';
+import { setVariableSupplier } from './utils/monaco';
+import { buildVariableCatalog, folderVariableEntries } from './utils/variableCatalog';
+import { useTabStore } from './stores/tabStore';
 import { useWorkspaceStore } from './stores/workspaceStore';
 
 export default function App(): React.JSX.Element {
   const loaded = useSettingsStore((state) => state.loaded);
   const loadSettings = useSettingsStore((state) => state.load);
   const { t } = useI18n();
+
+  useEffect(() => {
+    setVariableSupplier(() => {
+      const environmentState = useEnvStore.getState();
+      const tabState = useTabStore.getState();
+      const activeTab = tabState.tabs.find((tab) => tab.id === tabState.activeTabId);
+      const folderVariables = folderVariableEntries(activeTab?.collectionId, useCollectionStore.getState().nodes);
+      return buildVariableCatalog(environmentState.environments, environmentState.globals, folderVariables);
+    });
+  }, []);
 
   useEffect(() => {
     const dispose = installThemeWatcher();
@@ -57,7 +69,6 @@ export default function App(): React.JSX.Element {
       <Routes>
         <Route path="/" element={<WorkspacePage />} />
         <Route path="/settings" element={<SettingsPage />} />
-        <Route path="/environments" element={<EnvironmentsPage />} />
         <Route path="*" element={<WorkspacePage />} />
       </Routes>
       <Toasts />

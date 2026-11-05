@@ -7,13 +7,13 @@ import { Menu } from '../common/Menu';
 import { useI18n } from '../../i18n';
 
 const SNIPPETS: Array<{ label: string; code: string; event: 'pre' | 'test' | 'both' }> = [
-  { label: 'Set an environment variable', code: 'pm.environment.set("key", "value");', event: 'both' },
-  { label: 'Log a value', code: 'console.log("value:", pm.environment.get("key"));', event: 'both' },
-  { label: 'Test status code', code: 'pm.test("Status is 200", () => pm.response.to.have.status(200));', event: 'test' },
-  { label: 'Parse JSON response', code: 'const data = pm.response.json();\nconsole.log(data);', event: 'test' },
-  { label: 'Test a JSON property', code: 'pm.test("Has expected property", () => pm.expect(pm.response.json()).to.have.property("id"));', event: 'test' },
-  { label: 'Test response time', code: 'pm.test("Responds under 1s", () => pm.expect(pm.response.responseTime).to.be.below(1000));', event: 'test' },
-  { label: 'Set a header', code: 'pm.request.headers.upsert({ key: "X-Debug", value: "1" });', event: 'pre' }
+  { label: 'Set an environment variable', code: 'pg.environment.set("key", "value");', event: 'both' },
+  { label: 'Log a value', code: 'console.log("value:", pg.environment.get("key"));', event: 'both' },
+  { label: 'Test status code', code: 'pg.test("Status is 200", () => pg.response.to.have.status(200));', event: 'test' },
+  { label: 'Parse JSON response', code: 'const data = pg.response.json();\nconsole.log(data);', event: 'test' },
+  { label: 'Test a JSON property', code: 'pg.test("Has expected property", () => pg.expect(pg.response.json()).to.have.property("id"));', event: 'test' },
+  { label: 'Test response time', code: 'pg.test("Responds under 1s", () => pg.expect(pg.response.responseTime).to.be.below(1000));', event: 'test' },
+  { label: 'Set a header', code: 'pg.request.headers.upsert({ key: "X-Debug", value: "1" });', event: 'pre' }
 ];
 
 export function ScriptsTab({
@@ -73,8 +73,9 @@ export function ScriptsTab({
         path={`script-${tab.id}-${active}.js`}
       />
       <div className="script-help">
-        <span><code>pm.environment</code>, <code>pm.globals</code>, <code>pm.request</code>, <code>pm.response</code></span>
-        <span><code>pm.test()</code>, <code>pm.expect()</code>, <code>console.log()</code></span>
+        <span><code>pg.environment</code>, <code>pg.globals</code>, <code>pg.request</code>, <code>pg.response</code></span>
+        <span><code>pg.test()</code>, <code>pg.expect()</code>, <code>console.log()</code></span>
+        <span className="script-alias">{t('pm.* is kept for Postman compatibility')}</span>
       </div>
       {active === 'test' && tests.length > 0 && (
         <div className="script-mini-results">

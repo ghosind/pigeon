@@ -82,7 +82,7 @@ export function createSavedRequestEntity(
 export function createCollectionNodeEntity(
   id: string,
   input: Pick<CollectionNode, 'name' | 'parentId' | 'type'> &
-    Partial<Pick<CollectionNode, 'description' | 'preRequestScript' | 'testScript' | 'order'>>
+    Partial<Pick<CollectionNode, 'description' | 'preRequestScript' | 'testScript' | 'variables' | 'order'>>
 ): CollectionNode {
   const now = Date.now();
   return {
@@ -93,6 +93,7 @@ export function createCollectionNodeEntity(
     type: input.type,
     preRequestScript: input.preRequestScript ?? '',
     testScript: input.testScript ?? '',
+    variables: input.variables ?? [],
     order: input.order ?? now,
     isDirty: false,
     createdAt: now,

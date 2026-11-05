@@ -19,6 +19,8 @@ import { Logo } from '../components/common/Logo';
 import { useI18n } from '../i18n';
 import { ConsoleDock, WorkspaceStatusBar } from '../components/layout/ConsoleDock';
 import { CodeSidebar } from '../components/request/CodeSidebar';
+import { FolderSettingsPanel } from '../components/folder/FolderSettingsPanel';
+import { EnvironmentSettingsPanel } from '../components/environment/EnvironmentSettingsPanel';
 
 export function WorkspacePage(): React.JSX.Element {
   const tab = useActiveTab();
@@ -50,7 +52,7 @@ export function WorkspacePage(): React.JSX.Element {
         return;
       }
       const active = useTabStore.getState().tabs.find((entry) => entry.id === useTabStore.getState().activeTabId);
-      if (matchesShortcut(event, shortcuts.send) && active) {
+      if (matchesShortcut(event, shortcuts.send) && active?.kind === 'request') {
         event.preventDefault();
         void useTabStore.getState().send(active.id);
         return;
@@ -65,7 +67,7 @@ export function WorkspacePage(): React.JSX.Element {
         useTabStore.getState().requestCloseTab(active.id);
         return;
       }
-      if (matchesShortcut(event, shortcuts.save) && active) {
+      if (matchesShortcut(event, shortcuts.save) && active?.kind === 'request') {
         event.preventDefault();
         if (active.sourceRequestId) void useTabStore.getState().saveNow(active.id);
         else ui.openSaveRequest(active.id);
@@ -106,6 +108,17 @@ export function WorkspacePage(): React.JSX.Element {
         <main className="work-main">
           <TabStrip />
           <div className="work-stage">
+          {tab?.kind === 'folder' ? (
+            <FolderSettingsPanel
+              id={tab.folderId ?? ''}
+              onClose={() => useTabStore.getState().closeTab(tab.id)}
+            />
+          ) : tab?.kind === 'environment' ? (
+            <EnvironmentSettingsPanel
+              environmentId={tab.environmentId ?? null}
+              onClose={() => useTabStore.getState().closeTab(tab.id)}
+            />
+          ) : (
           <div className={`workspace-columns ${codeSidebarOpen && tab ? 'with-code' : ''}`}>
           {tab ? (
             <div className="work-editor">
@@ -125,8 +138,9 @@ export function WorkspacePage(): React.JSX.Element {
           ) : (
             <WelcomeView />
           )}
-          {tab && codeSidebarOpen && <CodeSidebar tab={tab} />}
+          {tab?.kind === 'request' && codeSidebarOpen && <CodeSidebar tab={tab} />}
           </div>
+          )}
           </div>
           <ConsoleDock />
           <WorkspaceStatusBar />

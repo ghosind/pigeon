@@ -44,6 +44,12 @@ export const requestDefinitionSchema = z.object({
   auth: authSchema
 });
 
+export const variableEntrySchema = z.object({
+  key: z.string().max(10000),
+  value: z.string().max(500000),
+  enabled: z.boolean()
+});
+
 export const environmentVariableSchema = z.object({
   key: z.string().max(10000),
   value: z.string().max(500000),

@@ -18,7 +18,10 @@
 .topbar button,
 .topbar .menu-root,
 .topbar .command-trigger,
-.topbar .env-pill { -webkit-app-region: no-drag; }
+.topbar .brand,
+.topbar .menu-pop,
+.topbar input,
+.topbar select { -webkit-app-region: no-drag; }
 
 .brand {
   display: flex;
@@ -65,25 +68,6 @@
 .command-trigger kbd { background: var(--panel); }
 .topbar-spacer { flex: 1; }
 
-.env-pill {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  height: 28px;
-  max-width: 180px;
-  padding: 0 9px;
-  border: 1px solid var(--border);
-  border-radius: 20px;
-  background: var(--panel-soft);
-  color: var(--text-soft);
-  font-size: 11.5px;
-  font-weight: 550;
-}
-.env-pill:hover { background: var(--hover); border-color: var(--border-strong); }
-.env-pill span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.env-pill svg:first-child { color: var(--accent); }
-
-.new-request-btn { margin-left: 3px; height: 29px; }
 
 /* Workspace */
 .workspace-body { flex: 1; min-height: 0; display: flex; }
@@ -390,6 +374,15 @@
 .tab-list-btn:hover { color: var(--text); background: var(--hover); }
 .tab-switcher .menu-pop { top: calc(100% + 2px); }
 .tab-switcher .menu-item-icon .method-chip { min-width: 0; }
+
+.tab-env-menu { flex: none; height: 100%; }
+.tab-env-menu .menu-trigger { height: 100%; }
+.tab-env-menu .menu-pop { top: calc(100% + 2px); }
+.tab-env-trigger { display: flex; align-items: center; gap: 5px; height: 100%; padding: 0 9px; border-left: 1px solid var(--border); color: var(--text-soft); font-size: 11px; font-weight: 550; }
+.tab-env-trigger:hover { background: var(--hover); }
+.tab-env-trigger svg:first-child { color: var(--accent); flex: none; }
+.tab-env-trigger svg:last-child { color: var(--faint); flex: none; }
+.tab-env-trigger span { max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 
 /* Split editor */
@@ -739,3 +732,4 @@ body.resizing-horizontal * { pointer-events: none; }
 }
 .code-sidebar-foot > span { color: var(--faint); font-size: 9.5px; line-height: 1.4; }
 .code-pill.active { color: var(--accent); border-color: var(--accent-border); background: var(--accent-soft); }
+.tab-folder-icon { color: var(--accent); flex: none; }

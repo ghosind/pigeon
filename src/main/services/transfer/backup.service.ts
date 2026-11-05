@@ -137,8 +137,8 @@ export class BackupService {
   private insertCollections(rows: BackupCollectionRow[]): void {
     const insert = this.db.prepare(
       `INSERT INTO collections (id, name, description, parent_id, type, pre_request_script, test_script,
-        sort_order, cloud_id, sync_version, is_dirty, created_at, updated_at, workspace_id)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        variables, sort_order, cloud_id, sync_version, is_dirty, created_at, updated_at, workspace_id)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     );
     for (const row of rows) {
       insert.run(
@@ -149,6 +149,7 @@ export class BackupService {
         row.type,
         row.pre_request_script,
         row.test_script,
+        row.variables ?? '[]',
         row.sort_order,
         row.cloud_id,
         row.sync_version,

@@ -30,6 +30,13 @@ export type AuthType = 'none' | 'basic' | 'bearer' | 'apikey';
 export type ThemePreference = 'light' | 'dark' | 'system';
 export type LanguagePreference = 'system' | 'en' | 'zh-CN';
 
+/** A plain (non-secret) variable defined on a workspace or collection/folder. */
+export interface VariableEntry {
+  key: string;
+  value: string;
+  enabled: boolean;
+}
+
 export interface Workspace {
   id: string;
   name: string;
@@ -104,6 +111,7 @@ export interface CollectionNode extends CloudFields {
   type: CollectionNodeType;
   preRequestScript: string;
   testScript: string;
+  variables: VariableEntry[];
   order: number;
   createdAt: number;
   updatedAt: number;

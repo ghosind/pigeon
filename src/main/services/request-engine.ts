@@ -104,6 +104,7 @@ export class RequestEngine {
     const runtime: RuntimeScopes = this.deps.environments.runtimeScopes(payload.environmentId);
     const scopes: VariableScopes = {
       environment: { ...runtime.environment },
+      folder: this.deps.collections.variableScope(payload.collectionId),
       globals: { ...runtime.globals },
       local: { ...(payload.localVariables ?? {}) }
     };

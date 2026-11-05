@@ -12,9 +12,9 @@ import { AppError } from '../utils/errors';
 import { createLogger } from '../utils/logger';
 
 const logger = createLogger('database');
-const SCHEMA_VERSION = 2;
+const SCHEMA_VERSION = 3;
 
-const SCHEMA_V2 = `
+const SCHEMA_V3 = `
 CREATE TABLE IF NOT EXISTS workspaces (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL,
@@ -33,6 +33,7 @@ CREATE TABLE IF NOT EXISTS collections (
   type TEXT NOT NULL CHECK (type IN ('collection', 'folder')),
   pre_request_script TEXT NOT NULL DEFAULT '',
   test_script TEXT NOT NULL DEFAULT '',
+  variables TEXT NOT NULL DEFAULT '[]',
   sort_order REAL NOT NULL DEFAULT 0,
   cloud_id TEXT,
   sync_version INTEGER,
@@ -177,7 +178,7 @@ function seedFirstRun(db: DatabaseSync, workspaceId: string): void {
     JSON.stringify([{ key: 'Accept', value: 'application/json', enabled: true }]),
     JSON.stringify(emptyBody),
     '',
-    'pm.test("Status is 200", () => pm.response.to.have.status(200));',
+    'pg.test("Status is 200", () => pg.response.to.have.status(200));',
     JSON.stringify({ type: 'none' }),
     1000,
     now,
@@ -195,10 +196,10 @@ function seedFirstRun(db: DatabaseSync, workspaceId: string): void {
     JSON.stringify(jsonBody),
     '',
     [
-      'pm.test("Created", () => pm.response.to.have.status(201));',
-      'const body = pm.response.json();',
-      'pm.test("Returns an id", () => pm.expect(body).to.have.property("id"));',
-      'pm.test("Echoes the title", () => pm.expect(body.title).to.equal("Ship the release"));'
+      'pg.test("Created", () => pg.response.to.have.status(201));',
+      'const body = pg.response.json();',
+      'pg.test("Returns an id", () => pg.expect(body).to.have.property("id"));',
+      'pg.test("Echoes the title", () => pg.expect(body.title).to.equal("Ship the release"));'
     ].join('\n'),
     JSON.stringify({ type: 'none' }),
     3000,
@@ -215,8 +216,8 @@ function seedFirstRun(db: DatabaseSync, workspaceId: string): void {
     '[]',
     JSON.stringify([{ key: 'Accept', value: 'application/json', enabled: true }]),
     JSON.stringify(emptyBody),
-    'console.log("Resolving with environment:", pm.environment.get("baseUrl"));',
-    'pm.test("Request succeeded", () => pm.response.to.have.status(200));',
+    'console.log("Resolving with environment:", pg.environment.get("baseUrl"));',
+    'pg.test("Request succeeded", () => pg.response.to.have.status(200));',
     JSON.stringify({ type: 'none' }),
     1000,
     now,
@@ -266,17 +267,22 @@ export class PigeonDatabase {
 
   private migrate(): void {
     const version = this.schemaVersion();
-    if (version > 0 && version < SCHEMA_VERSION) {
+    if (version === 1) {
       throw new AppError(
         'DATABASE_ERROR',
-        `Unsupported database schema version ${version}. Delete pigeon.db to start with a fresh v0.1 database.`
+        'Unsupported database schema version 1. Delete pigeon.db to start with a fresh v0.1 database.'
       );
     }
     if (version >= SCHEMA_VERSION) return;
     this.handle.exec('BEGIN');
     try {
-      this.handle.exec(SCHEMA_V2);
-      seedFirstRun(this.handle, randomUUID());
+      if (version === 0) {
+        this.handle.exec(SCHEMA_V3);
+        seedFirstRun(this.handle, randomUUID());
+      } else if (version === 2) {
+        this.handle.exec("ALTER TABLE collections ADD COLUMN variables TEXT NOT NULL DEFAULT '[]'");
+        logger.info('Migrated database to scoped variables');
+      }
       this.handle.exec(`PRAGMA user_version = ${SCHEMA_VERSION}`);
       this.handle.exec('COMMIT');
     } catch (error) {

@@ -10,7 +10,7 @@ A local-first, multi-workspace API debugging client.
 - `GET / POST / PUT / PATCH / DELETE / HEAD / OPTIONS / CONNECT`
 - URL/query synchronization, header presets and bulk editing
 - Raw, form-data (with files), URL-encoded and binary bodies
-- Variable resolution with local > environment > global precedence and dynamic variables
+- Variable resolution with local > environment > folder > global precedence, folder variables and dynamic variables
 - Timeouts, redirects with cross-origin auth stripping, cancellation, response size limits
 - Streaming collection of gzip / deflate / Brotli responses
 - System/custom HTTP/SOCKS proxies, custom CAs, PEM/PFX client certificates
@@ -19,7 +19,8 @@ A local-first, multi-workspace API debugging client.
 ### Workspace, collections, scripts, history
 - Multiple workspaces with isolated collection trees, environments and history
 - Collection → folder → request tree with drag-and-drop move and reorder
-- Inherited pre-request/test scripts and a sandboxed `pm` API subset
+- Folder settings tab with variables and inherited pre-request/test scripts
+- Inherited pre-request/test scripts and a sandboxed `pg` script API with a Postman-compatible `pm` alias
 - AES-256-GCM encryption for secret variables and client-certificate passphrases
 - Auto-recorded history with search, pagination, reopen, save-to-collection and delete
 - Postman Collection v2.1 and Environment import/export; HAR 1.2 import/export
@@ -32,7 +33,7 @@ A local-first, multi-workspace API debugging client.
 - Response Pretty/Raw/HTML preview, headers, sent headers, Console and Test Results
 - Global request Console dock with All/Errors filters
 - Independent right-side code snippet panel with syntax-highlighted Monaco output
-- Full-screen Settings and Environment manager pages
+- Full-screen Settings page and tabbed environment/folder settings
 
 ## Screenshots
 
@@ -44,9 +45,12 @@ A local-first, multi-workspace API debugging client.
 | --- | --- |
 | ![Code snippets](docs/screenshots/code.png) | ![Settings](docs/screenshots/settings.png) |
 
-| Environments | Dark theme |
+| Environment settings | Dark theme |
 | --- | --- |
-| ![Environments](docs/screenshots/environments.png) | ![Dark theme](docs/screenshots/dark.png) |
+| ![Environment settings](docs/screenshots/environments.png) | ![Dark theme](docs/screenshots/dark.png) |
+| Folder settings |
+| --- |
+| ![Folder settings](docs/screenshots/folder-settings.png) |
 
 | Flattened Request Defaults | Lean About page |
 | --- | --- |
@@ -62,7 +66,7 @@ pnpm dev          # electron-vite dev
 pnpm typecheck    # TypeScript 7 main + renderer
 pnpm lint         # oxlint
 pnpm i18n:validate
-pnpm test         # 58 unit/integration tests
+pnpm test         # 62 unit/integration tests
 pnpm build        # production bundles in out/
 pnpm dist:dir     # unpacked app in release/mac-arm64/Pigeon.app
 pnpm verify:package # assert the packaged app has its resources
@@ -96,6 +100,6 @@ Files: `pigeon.db`, `vault.key`, `logs/pigeon.log`, `tmp/responses/`. **Settings
 - `pnpm typecheck` — main and renderer pass with TypeScript 7.
 - `pnpm lint` — oxlint with zero warnings.
 - `pnpm i18n:validate` — `en` and `zh-CN` catalogs are complete and in sync.
-- `pnpm test` — **58 tests** across URL/variable resolution, i18n, code generation, script sandbox, crypto, HTTP client, database/workspace isolation, request-engine integration, Postman/HAR parsing and workspace backup restore.
+- `pnpm test` — **62 tests** across URL/variable resolution, i18n, code generation, script sandbox, crypto, HTTP client, database/workspace isolation, request-engine integration, Postman/HAR parsing and workspace backup restore.
 - `pnpm build` and `electron-builder --dir --mac` produce the packaged app.
 - UI smoke-tested from the production bundle in headless Chromium; light, dark and Chinese locale verified.

@@ -2,11 +2,12 @@ import { z } from 'zod';
 import { IPC } from '@shared/ipc';
 import type { EnvironmentVariable } from '@shared/types';
 import type { AppContext } from '../context';
-import { environmentVariableSchema, requestDefinitionSchema } from '../utils/validation';
+import { environmentVariableSchema, requestDefinitionSchema, variableEntrySchema } from '../utils/validation';
 import type { IpcRegistrar } from './registrar';
 
 const idSchema = z.string().min(1).max(120);
 const variablesSchema = z.array(environmentVariableSchema).max(2000);
+const scopedVariablesSchema = z.array(variableEntrySchema).max(2000);
 
 export function registerWorkspaceIpc(ipc: IpcRegistrar, ctx: AppContext): void {
   ipc.handle(IPC.workspaceList, null, () => ctx.workspaces.list());
@@ -35,7 +36,8 @@ export function registerWorkspaceIpc(ipc: IpcRegistrar, ctx: AppContext): void {
         name: z.string().min(1).max(500).optional(),
         description: z.string().max(10000).optional(),
         preRequestScript: z.string().max(500000).optional(),
-        testScript: z.string().max(500000).optional()
+        testScript: z.string().max(500000).optional(),
+        variables: scopedVariablesSchema.optional()
       })
     }),
     (input) => ctx.collections.update(input)

@@ -3,6 +3,7 @@ import { FileUp, ListFilter, Plus, Trash2, X } from 'lucide-react';
 import type { ParamItem } from '@shared/types';
 import { asApiCallError } from '../../utils/api';
 import { useUiStore } from '../../stores/uiStore';
+import { VariableInput } from '../common/VariableInput';
 import { useI18n } from '../../i18n';
 
 interface KeyValueEditorProps {
@@ -92,11 +93,8 @@ export function KeyValueEditor({
 
   return (
     <div className={`kv-editor ${allowFiles ? 'allow-files' : ''}`}>
-      <div className="kv-toolbar">
-        <span className="kv-hint">
-          {enableBulkEdit ? t('Toggle rows with the checkbox. Values may contain {{variables}}.') : t('File fields are streamed from disk when the request is sent.')}
-        </span>
-        {enableBulkEdit && (
+      {enableBulkEdit && (
+        <div className="kv-toolbar">
           <button
             type="button"
             className={`link-btn ${bulk ? 'active' : ''}`}
@@ -107,8 +105,8 @@ export function KeyValueEditor({
           >
             <ListFilter size={13} /> {t('Bulk edit')}
           </button>
-        )}
-      </div>
+        </div>
+      )}
 
       {bulk ? (
         <div className="bulk-edit">
@@ -191,12 +189,13 @@ export function KeyValueEditor({
                     )}
                   </button>
                 ) : (
-                  <input
+                  <VariableInput
                     className="kv-input"
+                    fieldClassName="kv-value-field"
                     value={row.value}
                     placeholder={valuePlaceholder}
-                    onChange={(event) => update(index, { value: event.target.value })}
-                    spellCheck={false}
+                    ariaLabel={valuePlaceholder}
+                    onChange={(value) => update(index, { value })}
                   />
                 )}
                 <input
